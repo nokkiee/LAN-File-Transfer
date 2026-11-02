@@ -1,0 +1,29 @@
+# Checks weekly for new versions and opens one pull request per group.
+# The Tests and Build apps workflows then check the update on Windows and Linux.
+version: 2
+updates:
+  # Python packages in requirements.txt and requirements-build.txt
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    # Raise the ">=" minimum to the new version, so each update gets a pull request and is tested.
+    versioning-strategy: increase
+    groups:
+      python-packages:
+        patterns: ["*"]
+    commit-message:
+      prefix: "deps"
+
+  # Actions used by the workflows in .github/workflows
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      github-actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: "ci"
