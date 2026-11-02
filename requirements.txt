@@ -1,2 +1,2 @@
-PySide6-Essentials>=6.7
-cryptography>=42
+PySide6-Essentials>=6.12.0
+cryptography>=50.0.2
