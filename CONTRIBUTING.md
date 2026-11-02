@@ -19,8 +19,10 @@ router's "client isolation" feature.
 
 **Security problems** (for example a way to write files outside the receive
 folder, or to get an unsigned update installed) shouldn't be described in a
-public issue. Open an issue that only says you found a security problem, and
-you'll be given a private way to send the details.
+public issue. Report them privately instead: on the repo's **Security** tab,
+click **Report a vulnerability**
+([direct link](https://github.com/nokkiee/LAN-File-Transfer/security/advisories/new)).
+Only the maintainer can see these reports.
 
 ## Suggesting a feature
 
