@@ -1,6 +1,7 @@
 # LAN File Transfer
 
 [![Latest release](https://img.shields.io/github/v/release/nokkiee/LAN-File-Transfer)](https://github.com/nokkiee/LAN-File-Transfer/releases/latest)
+[![License: MIT](https://img.shields.io/github/license/nokkiee/LAN-File-Transfer)](LICENSE)
 [![Tests](https://github.com/nokkiee/LAN-File-Transfer/actions/workflows/tests.yml/badge.svg)](https://github.com/nokkiee/LAN-File-Transfer/actions/workflows/tests.yml)
 [![Build apps](https://github.com/nokkiee/LAN-File-Transfer/actions/workflows/build.yml/badge.svg)](https://github.com/nokkiee/LAN-File-Transfer/actions/workflows/build.yml)
 
