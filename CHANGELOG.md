@@ -11,6 +11,13 @@ No changes to the app yet. The repository now has:
 - An MIT license, contributing guide, security policy and code of conduct.
 - Issue forms for bug reports and feature requests, and a pull request template.
 - Private vulnerability reporting.
+- Automatic tests on Windows and Linux (Python 3.10, 3.13 and 3.14) for every change.
+- Automatic test builds of both apps, each checked to start before it's kept.
+- Dependabot for dependency updates and security alerts.
+
+### Changed
+
+- Minimum versions raised to the versions 1.1.0 was already built with: PySide6-Essentials 6.12.0, cryptography 50.0.2, PyInstaller 6.22.3.
 
 ## [1.1.0] - 2026-11-02
 
