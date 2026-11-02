@@ -1,5 +1,7 @@
 # LAN File Transfer
 
+[![Tests](https://github.com/nokkiee/LAN-File-Transfer/actions/workflows/tests.yml/badge.svg)](https://github.com/nokkiee/LAN-File-Transfer/actions/workflows/tests.yml)
+
 Send files and folders between two computers on the same Wi‑Fi. Works
 Windows ↔ Linux, Linux ↔ Linux and Windows ↔ Windows. Nothing goes over the
 internet, and you don't need an account.

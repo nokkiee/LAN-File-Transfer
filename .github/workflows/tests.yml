@@ -1,0 +1,35 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: ${{ matrix.os }} / Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        # 3.10: oldest supported. 3.13: used for the Windows build. 3.14: used for the Linux build.
+        python: ["3.10", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+      # The tests cover the networking and file handling, which don't need Qt.
+      - name: Install test dependencies
+        run: python -m pip install "cryptography>=42"
+      # Catches syntax that doesn't work on this Python version, including the GUI code the tests don't import.
+      - name: Check all files compile
+        run: python -m compileall -q lanxfer main.py tools tests
+      - name: Run tests
+        run: python -m unittest discover -s tests -v
