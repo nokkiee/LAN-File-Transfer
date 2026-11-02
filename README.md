@@ -5,6 +5,7 @@
 [![Stars](https://img.shields.io/github/stars/nokkiee/LAN-File-Transfer?style=flat)](https://github.com/nokkiee/LAN-File-Transfer/stargazers)
 [![License: MIT](https://img.shields.io/github/license/nokkiee/LAN-File-Transfer)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue?logo=python&logoColor=white)](https://github.com/nokkiee/LAN-File-Transfer/actions/workflows/tests.yml)
+[![Platform: Windows | Linux](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey)](https://github.com/nokkiee/LAN-File-Transfer/releases/latest)
 [![Tests](https://github.com/nokkiee/LAN-File-Transfer/actions/workflows/tests.yml/badge.svg)](https://github.com/nokkiee/LAN-File-Transfer/actions/workflows/tests.yml)
 [![Build apps](https://github.com/nokkiee/LAN-File-Transfer/actions/workflows/build.yml/badge.svg)](https://github.com/nokkiee/LAN-File-Transfer/actions/workflows/build.yml)
 
