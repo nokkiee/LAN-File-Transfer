@@ -112,7 +112,7 @@ Transfers aren't encrypted, which is the usual trade-off for LAN tools like
 this. Use it on networks you trust, such as your home Wi‑Fi. Nothing is ever
 saved without you clicking **Accept** (unless you turn that off in Settings),
 and incoming file names are sanitized so they can't write outside the receive
-folder.
+folder. See [SECURITY.md](SECURITY.md) for details and how to report a problem.
 
 ---
 
