@@ -1,0 +1,61 @@
+# Changelog
+
+All notable changes to LAN File Transfer are listed here, newest first.
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+
+## [Unreleased]
+
+No changes to the app yet. The repository now has:
+
+- A screenshot in the README (light and dark), and a link to the Releases page for downloads.
+- An MIT license, contributing guide, security policy and code of conduct.
+- Issue forms for bug reports and feature requests, and a pull request template.
+- Private vulnerability reporting.
+
+## [1.1.0] - 2026-11-02
+
+### Added
+
+- **Updates over Wi‑Fi.** The computer that builds the app can push a new version to your other computers. Before installing, the receiving app checks that the update:
+  - is signed (Ed25519) by the building computer,
+  - is newer than the installed version (no downgrades),
+  - is built for its system,
+  - matches its checksum,
+  - starts successfully once.
+
+  It then replaces itself and restarts, waiting for running transfers to finish first. The receiving computer asks once (**Update now / Not now**).
+- A bar at the top shows which computers can be updated, and which ones are too old to update themselves.
+- Each computer in the list shows its version and build date, for example `1.1.0 (12 Oct 17:05)`.
+- **Light and dark themes:** choose Auto, Light or Dark from the button in the top-right corner or in Settings. Auto follows the system setting as it changes.
+- **A folder for every transfer.** Received files go into their own numbered folder, named with the date, time and number of files, for example `0012 2026-10-12 09.15.00 3 files`. **Open folder** opens exactly that folder.
+
+### Changed
+
+- Received files are no longer all saved directly in the receive folder; see the numbered folders above.
+- Sending the same file twice now gives two separate folders instead of `name (1).ext`.
+- The app looks the same on Windows and Linux (Qt Fusion style with its own colour palettes).
+
+### Fixed
+
+- A transfer cancelled before its first file arrived no longer leaves an empty folder behind.
+
+## 1.0.0 - 2026-10-11
+
+First version. Not published on GitHub.
+
+- Send files and folders, including empty folders, between Windows and Linux computers on the same network.
+- Computers find each other automatically (UDP broadcast). Each computer also answers the others directly, so discovery works even when broadcasts only get through in one direction.
+- **Add computer by IP address…** for networks where discovery doesn't work.
+- The receiver chooses **Accept** or **Decline**, with a 2-minute timeout and a warning when there isn't enough free space.
+- Every file is checked with SHA‑256, and either side can cancel a transfer.
+- Progress shows the percentage, speed, time left and current file.
+- Received file names are made safe:
+  - nothing can be written outside the receive folder,
+  - names that aren't valid on Windows (`a:b.txt`, `CON`, trailing dots, names differing only in case) are fixed,
+  - existing files are never overwritten.
+- File modification times are kept.
+- Settings: computer name, receive folder, and whether to ask before accepting.
+- Single-file apps for Windows (`.exe`) and Linux. On Linux the app adds itself to the applications menu.
+
+[Unreleased]: https://github.com/nokkiee/LAN-File-Transfer/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/nokkiee/LAN-File-Transfer/releases/tag/v1.1.0

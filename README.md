@@ -19,7 +19,7 @@ Get the latest version from the [Releases page](https://github.com/nokkiee/LAN-F
 | Linux (64-bit)  | `LAN-File-Transfer-Linux` |
 
 Both are single files with nothing to install. Put the right one on each
-computer and run it.
+computer and run it. See [CHANGELOG.md](CHANGELOG.md) for what changed in each version.
 
 ## Using it
 
