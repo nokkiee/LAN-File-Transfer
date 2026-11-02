@@ -1,6 +1,7 @@
 # LAN File Transfer
 
 [![Tests](https://github.com/nokkiee/LAN-File-Transfer/actions/workflows/tests.yml/badge.svg)](https://github.com/nokkiee/LAN-File-Transfer/actions/workflows/tests.yml)
+[![Build apps](https://github.com/nokkiee/LAN-File-Transfer/actions/workflows/build.yml/badge.svg)](https://github.com/nokkiee/LAN-File-Transfer/actions/workflows/build.yml)
 
 Send files and folders between two computers on the same Wi‑Fi. Works
 Windows ↔ Linux, Linux ↔ Linux and Windows ↔ Windows. Nothing goes over the
@@ -151,6 +152,10 @@ Build:
 
 The Linux binary runs on distributions at least as new as the one it was built
 on. On an older distro, build it there with `./build_linux.sh`.
+
+GitHub also builds both apps automatically (*Build apps* on the Actions tab).
+Those are unsigned test builds, made on Ubuntu 22.04 so the Linux one runs on
+older distributions too. Official releases are built and signed with `./build_all.sh`.
 
 ## License
 
