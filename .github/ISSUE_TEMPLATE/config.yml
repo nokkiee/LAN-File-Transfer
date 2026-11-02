@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security problem
+    url: https://github.com/nokkiee/LAN-File-Transfer/security/advisories/new
+    about: Please report security problems privately, not in a public issue.
+  - name: Computers can't see each other?
+    url: https://github.com/nokkiee/LAN-File-Transfer#troubleshooting
+    about: Check the troubleshooting steps first. It's usually the firewall or the router.

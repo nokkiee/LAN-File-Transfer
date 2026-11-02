@@ -1,0 +1,71 @@
+name: Bug report
+description: Something doesn't work as it should
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! If the computers can't see each other, please check
+        [Troubleshooting](https://github.com/nokkiee/LAN-File-Transfer#troubleshooting) first. It's usually the firewall or the router.
+        **Security problems don't belong here.** Please [report them privately](https://github.com/nokkiee/LAN-File-Transfer/security/advisories/new).
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+      placeholder: I sent a folder from my Windows PC to my Linux laptop and…
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the app on both computers
+        2. …
+    validations:
+      required: false
+  - type: dropdown
+    id: sender-os
+    attributes:
+      label: Sending computer
+      options:
+        - Windows 11
+        - Windows 10
+        - Linux
+        - Not a transfer problem
+    validations:
+      required: true
+  - type: dropdown
+    id: receiver-os
+    attributes:
+      label: Receiving computer
+      options:
+        - Windows 11
+        - Windows 10
+        - Linux
+        - Not a transfer problem
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: App version(s)
+      description: Shown under each computer in the device list, or in Settings.
+      placeholder: 1.1.0 (12 Oct 17:05) on both
+    validations:
+      required: true
+  - type: input
+    id: linux-distro
+    attributes:
+      label: Linux distribution (if any)
+      placeholder: Ubuntu 24.04
+  - type: textarea
+    id: log
+    attributes:
+      label: Log file
+      description: |
+        Paste the relevant part of the log from the computer where it went wrong:
+        Windows `%APPDATA%\LAN File Transfer\app.log`, Linux `~/.config/lan-file-transfer/app.log`.
+        It contains your computer names and local IP addresses. Edit those out if you prefer.
+      render: text
