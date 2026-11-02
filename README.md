@@ -149,3 +149,11 @@ Build:
 
 The Linux binary runs on distributions at least as new as the one it was built
 on. On an older distro, build it there with `./build_linux.sh`.
+
+## License
+
+[MIT](LICENSE). The downloadable apps also bundle third-party libraries under
+their own licenses, mainly Qt for Python (PySide6, LGPL-3.0), `cryptography`
+(Apache-2.0 / BSD) and Python itself (PSF License). Because this repo contains
+the full source and build scripts, you can rebuild the apps with your own copy
+of these libraries.
