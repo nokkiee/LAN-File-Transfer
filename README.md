@@ -4,13 +4,22 @@ Send files and folders between two computers on the same Wi‑Fi. Works
 Windows ↔ Linux, Linux ↔ Linux and Windows ↔ Windows. Nothing goes over the
 internet, and you don't need an account.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshot-dark.png">
+  <img src="docs/screenshot-light.png" alt="LAN File Transfer: nearby computers on the left, files to send on the right, transfers with progress below" width="800">
+</picture>
+
+## Download
+
+Get the latest version from the [Releases page](https://github.com/nokkiee/LAN-File-Transfer/releases/latest):
+
 | Computer | File to use |
 |----------|-------------|
-| Windows 10 / 11 | `dist/LAN-File-Transfer-Windows.exe` |
-| Linux (64-bit)  | `dist/LAN-File-Transfer-Linux` |
+| Windows 10 / 11 | `LAN-File-Transfer-Windows.exe` |
+| Linux (64-bit)  | `LAN-File-Transfer-Linux` |
 
-Both are single files with nothing to install. Copy the right one to each
-computer (USB stick, email, cloud drive, …) and run it.
+Both are single files with nothing to install. Put the right one on each
+computer and run it.
 
 ## Using it
 
