@@ -7,27 +7,30 @@ from PySide6.QtGui import QColor, QIcon, QImage, QLinearGradient, QPainter, QPai
 
 
 def icon_image(size: int) -> QImage:
+    """Graphite tile in the app's dark-theme greys, with one white and one blue arrow."""
     img = QImage(size, size, QImage.Format.Format_ARGB32_Premultiplied)
     img.fill(Qt.GlobalColor.transparent)
     p = QPainter(img)
     p.setRenderHint(QPainter.RenderHint.Antialiasing)
     m = size * 0.06
     rect = QRectF(m, m, size - 2 * m, size - 2 * m)
-    grad = QLinearGradient(rect.topLeft(), rect.bottomRight())
-    grad.setColorAt(0, QColor("#2563eb"))
-    grad.setColorAt(1, QColor("#0891b2"))
-    p.setPen(Qt.PenStyle.NoPen)
+    grad = QLinearGradient(rect.topLeft(), rect.bottomLeft())
+    grad.setColorAt(0, QColor("#3a3d44"))
+    grad.setColorAt(1, QColor("#25272c"))
+    # The thin lighter edge keeps the tile visible on dark taskbars.
+    p.setPen(QPen(QColor("#4a4e57"), max(1.0, size * 0.012)))
     p.setBrush(grad)
     p.drawRoundedRect(rect, size * 0.22, size * 0.22)
 
-    pen = QPen(QColor("white"), max(1.5, size * 0.085))
-    pen.setCapStyle(Qt.PenCapStyle.RoundCap)
-    pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
-    p.setPen(pen)
-    p.setBrush(Qt.BrushStyle.NoBrush)
     s = size
     head = s * 0.12
-    for y, x0, x1 in ((0.37, 0.27, 0.73), (0.63, 0.73, 0.27)):  # -> on top, <- below
+    p.setBrush(Qt.BrushStyle.NoBrush)
+    # -> on top in the theme's text colour, <- below in its highlight blue
+    for y, x0, x1, color in ((0.37, 0.27, 0.73, "#e6e7ea"), (0.63, 0.73, 0.27, "#3b82f6")):
+        pen = QPen(QColor(color), max(1.5, s * 0.085))
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
+        p.setPen(pen)
         path = QPainterPath(QPointF(s * x0, s * y))
         path.lineTo(s * x1, s * y)
         direction = 1 if x1 > x0 else -1

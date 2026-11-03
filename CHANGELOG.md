@@ -5,7 +5,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-No changes to the app yet. The repository now has:
+### Changed
+
+- New app icon: a graphite tile with one white and one blue arrow, matching the app's grey look in both themes. The Linux applications-menu icon is replaced too.
+- Minimum versions raised to the versions 1.1.0 was already built with: PySide6-Essentials 6.12.0, cryptography 50.0.2, PyInstaller 6.22.3.
+
+### Repository
 
 - A screenshot in the README (light and dark), and a link to the Releases page for downloads.
 - An MIT license, contributing guide, security policy and code of conduct.
@@ -14,10 +19,6 @@ No changes to the app yet. The repository now has:
 - Automatic tests on Windows and Linux (Python 3.10, 3.13 and 3.14) for every change.
 - Automatic test builds of both apps, each checked to start before it's kept.
 - Dependabot for dependency updates and security alerts.
-
-### Changed
-
-- Minimum versions raised to the versions 1.1.0 was already built with: PySide6-Essentials 6.12.0, cryptography 50.0.2, PyInstaller 6.22.3.
 
 ## [1.1.0] - 2026-11-02
 

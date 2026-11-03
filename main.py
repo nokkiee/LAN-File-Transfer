@@ -43,9 +43,10 @@ def install_linux_menu_entry() -> None:
         f"StartupWMClass={APP_SLUG}\n"
     )
     try:
-        if not icon_path.exists():
+        icon = png_bytes(256)
+        if not icon_path.exists() or icon_path.read_bytes() != icon:  # also replaces an older icon
             icon_path.parent.mkdir(parents=True, exist_ok=True)
-            icon_path.write_bytes(png_bytes(256))
+            icon_path.write_bytes(icon)
         if not desktop_path.exists() or desktop_path.read_text(encoding="utf-8") != entry:
             desktop_path.parent.mkdir(parents=True, exist_ok=True)
             desktop_path.write_text(entry, encoding="utf-8")
