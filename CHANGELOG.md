@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Linux: after the app icon changes, the applications menu and dock show the new icon right away. Before, GNOME kept showing a cached copy of the old one until you logged out. The icon file's name now changes whenever the picture does.
+
 ## [1.1.1] - 2026-11-03
 
 ### Changed

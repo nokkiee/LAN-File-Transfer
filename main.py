@@ -3,7 +3,6 @@
 import json
 import logging
 import logging.handlers
-import os
 import sys
 from pathlib import Path
 
@@ -25,31 +24,11 @@ def setup_logging() -> None:
 
 def install_linux_menu_entry() -> None:
     """When run as the packaged Linux binary, add it to the applications menu."""
+    from lanxfer import desktop_entry
     from lanxfer.icon import png_bytes
 
-    data_home = Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local" / "share")
-    icon_path = data_home / "icons" / "hicolor" / "256x256" / "apps" / f"{APP_SLUG}.png"
-    desktop_path = data_home / "applications" / f"{APP_SLUG}.desktop"
-    exe = sys.executable.replace('"', '\\"')
-    entry = (
-        "[Desktop Entry]\n"
-        "Type=Application\n"
-        f"Name={APP_NAME}\n"
-        "Comment=Send files to another computer on the same Wi-Fi\n"
-        f'Exec="{exe}"\n'
-        f"Icon={APP_SLUG}\n"
-        "Terminal=false\n"
-        "Categories=Network;FileTransfer;Utility;\n"
-        f"StartupWMClass={APP_SLUG}\n"
-    )
     try:
-        icon = png_bytes(256)
-        if not icon_path.exists() or icon_path.read_bytes() != icon:  # also replaces an older icon
-            icon_path.parent.mkdir(parents=True, exist_ok=True)
-            icon_path.write_bytes(icon)
-        if not desktop_path.exists() or desktop_path.read_text(encoding="utf-8") != entry:
-            desktop_path.parent.mkdir(parents=True, exist_ok=True)
-            desktop_path.write_text(entry, encoding="utf-8")
+        desktop_entry.install(sys.executable, png_bytes(256))
     except OSError:
         logging.getLogger(__name__).warning("Could not create the applications menu entry", exc_info=True)
 
