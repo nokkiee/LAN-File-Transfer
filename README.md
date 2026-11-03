@@ -78,7 +78,7 @@ automatically the first time you build and kept at
 `~/.local/share/lan-file-transfer-release/signing-key.pem`. If it's ever lost,
 a new one is made, and you copy the next version to each computer by hand once.
 
-Copies older than 1.1.0 can't update themselves, so copy 1.1.0 to them by hand
+Copies older than 1.1.0 can't update themselves, so copy the latest version to them by hand
 once. The app reminds you which computers need that. To skip the question and
 install updates automatically, set `"auto_install_updates": true` in that
 computer's `settings.json`.

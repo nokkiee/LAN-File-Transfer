@@ -9,7 +9,7 @@ import sys
 
 APP_NAME = "LAN File Transfer"
 APP_SLUG = "lan-file-transfer"
-VERSION = "1.1.0"
+VERSION = "1.1.1"
 
 IS_WINDOWS = sys.platform.startswith("win")
 IS_LINUX = sys.platform.startswith("linux")

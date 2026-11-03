@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-11-03
+
 ### Changed
 
 - New app icon: a graphite tile with one white and one blue arrow, matching the app's grey look in both themes. The Linux applications-menu icon is replaced too.
@@ -65,5 +67,6 @@ First version. Not published on GitHub.
 - Settings: computer name, receive folder, and whether to ask before accepting.
 - Single-file apps for Windows (`.exe`) and Linux. On Linux the app adds itself to the applications menu.
 
-[Unreleased]: https://github.com/nokkiee/LAN-File-Transfer/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/nokkiee/LAN-File-Transfer/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/nokkiee/LAN-File-Transfer/releases/tag/v1.1.1
 [1.1.0]: https://github.com/nokkiee/LAN-File-Transfer/releases/tag/v1.1.0
