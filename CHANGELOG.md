@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-11-03
+
 ### Fixed
 
 - Linux: after the app icon changes, the applications menu and dock show the new icon right away. Before, GNOME kept showing a cached copy of the old one until you logged out. The icon file's name now changes whenever the picture does.
@@ -71,6 +73,7 @@ First version. Not published on GitHub.
 - Settings: computer name, receive folder, and whether to ask before accepting.
 - Single-file apps for Windows (`.exe`) and Linux. On Linux the app adds itself to the applications menu.
 
-[Unreleased]: https://github.com/nokkiee/LAN-File-Transfer/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/nokkiee/LAN-File-Transfer/compare/v1.1.2...HEAD
+[1.1.2]: https://github.com/nokkiee/LAN-File-Transfer/releases/tag/v1.1.2
 [1.1.1]: https://github.com/nokkiee/LAN-File-Transfer/releases/tag/v1.1.1
 [1.1.0]: https://github.com/nokkiee/LAN-File-Transfer/releases/tag/v1.1.0
