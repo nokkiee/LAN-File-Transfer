@@ -5,9 +5,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-11-06
+
 ### Added
 
-- **Interrupted transfers continue where they stopped.** If the connection breaks, a computer goes to sleep, or the app is closed during a transfer, it shows *Interrupted* instead of failing. When both computers see each other again, the sender continues by itself. Files that already arrived are skipped, and a file that was cut off continues from where it stopped, after both sides check that the part already there still matches. The rest goes into the same numbered folder without asking again. Interrupted transfers are remembered across restarts for 30 days. **Resume** tries straight away and **Discard** stops one for good, keeping the files that arrived. This works between computers that both have this version or newer.
+- **Interrupted transfers continue where they stopped.** If the connection breaks, a computer goes to sleep, or the app is closed during a transfer, it shows *Interrupted* instead of failing. When both computers see each other again, the sender continues by itself. Files that already arrived are skipped, and a file that was cut off continues from where it stopped, after both sides check that the part already there still matches. The rest goes into the same numbered folder without asking again. Interrupted transfers are remembered across restarts for 30 days. **Resume** tries straight away and **Discard** stops one for good, keeping the files that arrived. This works between computers that both have 1.4.0 or newer.
 
 ### Changed
 
@@ -94,7 +96,8 @@ First version. Not published on GitHub.
 - Settings: computer name, receive folder, and whether to ask before accepting.
 - Single-file apps for Windows (`.exe`) and Linux. On Linux the app adds itself to the applications menu.
 
-[Unreleased]: https://github.com/nokkiee/LAN-File-Transfer/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/nokkiee/LAN-File-Transfer/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/nokkiee/LAN-File-Transfer/releases/tag/v1.4.0
 [1.3.0]: https://github.com/nokkiee/LAN-File-Transfer/releases/tag/v1.3.0
 [1.2.0]: https://github.com/nokkiee/LAN-File-Transfer/releases/tag/v1.2.0
 [1.1.2]: https://github.com/nokkiee/LAN-File-Transfer/releases/tag/v1.1.2

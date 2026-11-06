@@ -81,8 +81,8 @@ Both computers remember it, even after they restart.
   stops the transfer for good: the files that arrived stay, and the unfinished
   `.part` file is deleted.
 
-Interrupted transfers are kept for 30 days. Both computers need a version newer
-than 1.3.0; with an older copy on either side, a broken transfer has to be sent
+Interrupted transfers are kept for 30 days. Both computers need version 1.4.0 or
+newer; with an older copy on either side, a broken transfer has to be sent
 again.
 
 ## Updating your other computers over Wi‑Fi
