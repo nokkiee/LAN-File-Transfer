@@ -5,6 +5,8 @@
 #   macOS   -> dist/LAN File Transfer.app           (an app bundle, Apple Silicon)
 import sys
 
+from PyInstaller.utils.hooks import collect_submodules
+
 sys.path.insert(0, SPECPATH)
 from lanxfer import APP_NAME, VERSION  # noqa: E402
 
@@ -13,6 +15,8 @@ mac = sys.platform == "darwin"
 
 a = Analysis(
     ["main.py"],
+    # The translation catalogs are imported by name at run time, so list them explicitly.
+    hiddenimports=collect_submodules("lanxfer.locales"),
     excludes=["tkinter", "unittest", "pydoc", "PySide6.QtNetwork", "PySide6.QtQml", "PySide6.QtQuick"],
 )
 pyz = PYZ(a.pure)

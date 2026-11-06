@@ -70,6 +70,23 @@ How the code is organised:
   checksum and passes its self-test. Pull requests that loosen any of these
   won't be accepted.
 
+### Translations
+
+Texts are written in English in the code and wrapped in `tr("...")` (in the
+window) or `Msg("...")` (in the networking code, so messages stay English in
+logs and between computers). The translations live in `lanxfer/locales/`, one
+file per language, keyed by the English text.
+
+- After adding or changing a text, add it to **every** language file. The
+  tests (`tests/test_i18n.py`) fail if a translation is missing or no longer
+  used, or if its `{placeholders}` or plural forms don't match.
+  `python tools/i18n_strings.py` lists all the texts.
+- Texts with a number use plural forms: Polish needs three (1 plik, 2 pliki,
+  5 plików), the others two.
+- To add a language, create `lanxfer/locales/<code>.py`, then add it to
+  `LANGUAGES` and `PLURAL_FORMS` in `lanxfer/i18n.py`, with its plural rule in
+  `_plural_index` if it isn't the usual "1 = singular".
+
 ### Pull requests
 
 - Keep each pull request focused on one thing.

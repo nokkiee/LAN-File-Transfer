@@ -34,15 +34,21 @@ def install_linux_menu_entry() -> None:
 
 
 def run_self_test(report: str) -> int:
-    """Run by a freshly downloaded update before it replaces the current app:
+    """Run by a freshly downloaded update (and by the build checks) before it's used:
     load everything the app needs, then report which version this is."""
     import PySide6.QtWidgets  # noqa: F401
     from cryptography.hazmat.primitives.asymmetric import ed25519  # noqa: F401
+    from PySide6.QtCore import QLibraryInfo, QTranslator
 
     import lanxfer.gui  # noqa: F401
+    from lanxfer import i18n
     from lanxfer._build import BUILD
 
-    Path(report).write_text(json.dumps({"version": VERSION, "build": BUILD}), encoding="utf-8")
+    for code in i18n.LANGUAGES:  # every translation must be part of the build
+        i18n.set_language(code)
+    qt_translations = QTranslator().load("qtbase_pl", QLibraryInfo.path(QLibraryInfo.LibraryPath.TranslationsPath))
+    Path(report).write_text(json.dumps({"version": VERSION, "build": BUILD, "qt_translations": qt_translations}),
+                            encoding="utf-8")
     return 0
 
 
@@ -59,13 +65,22 @@ def main() -> int:
         except (AttributeError, OSError):
             pass
 
+    from PySide6.QtCore import QLibraryInfo, QTranslator
     from PySide6.QtWidgets import QApplication
 
+    from lanxfer import i18n
     from lanxfer.gui import MainWindow
     from lanxfer.icon import app_icon
     from lanxfer.theme import ThemeManager
 
     app = QApplication(sys.argv)
+    settings = Settings.load()
+    language = i18n.set_language(settings.language)
+    # Qt's own texts (OK, Cancel, Yes, No, file dialogs) in the same language.
+    qt_translator = QTranslator(app)
+    if language != "en" and qt_translator.load(f"qtbase_{language}",
+                                               QLibraryInfo.path(QLibraryInfo.LibraryPath.TranslationsPath)):
+        app.installTranslator(qt_translator)
     app.setApplicationName(APP_NAME)
     app.setApplicationVersion(VERSION)
     app.setDesktopFileName(APP_SLUG)
@@ -73,7 +88,6 @@ def main() -> int:
     if IS_LINUX and getattr(sys, "frozen", False):
         install_linux_menu_entry()
 
-    settings = Settings.load()
     window = MainWindow(settings, ThemeManager(app, settings.theme))
     window.show()
     return app.exec()

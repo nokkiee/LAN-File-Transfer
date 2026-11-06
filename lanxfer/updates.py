@@ -28,6 +28,7 @@ from typing import Callable
 
 from . import IS_MAC, IS_WINDOWS, VERSION, os_label, update_key
 from ._build import BUILD
+from .i18n import Msg, tr
 from .protocol import APP_ID, PROTOCOL_VERSION, ProtocolError, RemoteCancelled, recv_frame, remote_stop, send_frame
 from .transfer import (
     ACTIVE, CANCELLED, DECLINED, DONE, FAILED, IO_TIMEOUT, Cancelled, Outgoing, Transfer, TransferManager,
@@ -60,13 +61,19 @@ def version_key(version, build) -> tuple:
 CURRENT = version_key(VERSION, BUILD)
 
 
+MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
+
 def display_version(version: str, build) -> str:
     """"1.1.0 (12 Oct 16:22)": the build date tells apart builds of the same version."""
     try:
         stamp = int(build or 0)
     except (TypeError, ValueError):
         stamp = 0
-    return f"{version} ({time.strftime('%d %b %H:%M', time.localtime(stamp))})" if stamp else version
+    if not stamp:
+        return version
+    t = time.localtime(stamp)
+    return f"{version} ({t.tm_mday:02d} {tr(MONTHS[t.tm_mon - 1])} {t.tm_hour:02d}:{t.tm_min:02d})"
 
 
 def platform_key() -> str:
@@ -116,25 +123,25 @@ def verify_release(envelope, public_key: str | None = None) -> dict:
 
     key = update_key.PUBLIC_KEY if public_key is None else public_key
     if not key:
-        raise UpdateError("Updates aren't set up in this copy of the app.")
+        raise UpdateError(Msg("Updates aren't set up in this copy of the app."))
     try:
         text = envelope["payload"]
         signature = base64.b64decode(envelope["signature"], validate=True)
         Ed25519PublicKey.from_public_bytes(base64.b64decode(key)).verify(signature, text.encode("utf-8"))
     except InvalidSignature:
-        raise UpdateError("The update isn't signed by your computer, so it was refused.") from None
+        raise UpdateError(Msg("The update isn't signed by your computer, so it was refused.")) from None
     except (KeyError, TypeError, ValueError, AttributeError) as exc:
-        raise UpdateError("The update information is damaged.") from exc
+        raise UpdateError(Msg("The update information is damaged.")) from exc
     try:
         payload = json.loads(text)
     except ValueError as exc:
-        raise UpdateError("The update information is damaged.") from exc
+        raise UpdateError(Msg("The update information is damaged.")) from exc
     _check_payload(payload)
     return payload
 
 
 def _check_payload(payload) -> None:
-    bad = UpdateError("The update information is damaged.")
+    bad = UpdateError(Msg("The update information is damaged."))
     if not isinstance(payload, dict) or payload.get("app") != APP_ID:
         raise bad
     version, build, builds = payload.get("version"), payload.get("build"), payload.get("builds")
@@ -277,13 +284,15 @@ def cleanup_after_update() -> None:
 
 
 def launch_installed_app() -> None:
-    """Start the (new) app as a fresh, independent process."""
+    """Start the app again as a fresh, independent process (after an update, or for a new language)."""
     env = dict(os.environ, PYINSTALLER_RESET_ENVIRONMENT="1")
+    # The packaged app is one executable; from source it's Python running main.py.
+    command = [str(executable())] if is_packaged() else [sys.executable, os.path.abspath(sys.argv[0]), *sys.argv[1:]]
     if IS_WINDOWS:
         flags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
-        subprocess.Popen([str(executable())], env=env, creationflags=flags, close_fds=True)
+        subprocess.Popen(command, env=env, creationflags=flags, close_fds=True)
     else:
-        subprocess.Popen([str(executable())], env=env, start_new_session=True, close_fds=True,
+        subprocess.Popen(command, env=env, start_new_session=True, close_fds=True,
                          stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
@@ -371,16 +380,17 @@ class UpdateService:
                 "app": APP_ID, "version": PROTOCOL_VERSION, "type": "update",
                 "sender": {"id": identity["id"], "name": identity["name"], "os": os_label()},
                 "release": release.envelope, "target": target,
-            }, f"Waiting for {transfer.peer_name} to accept the update")
+            }, Msg("Waiting for {name} to accept the update", name=transfer.peer_name))
             if not accepted:
                 return
             with open(release.path(target), "rb") as f:
                 send_frame(out.sock, {"type": "file", "size": os.fstat(f.fileno()).st_size})
                 out.stream(f)
             transfer.files_done = 1
-            transfer.message = f"{transfer.peer_name} is checking and installing the update"
+            transfer.message = Msg("{name} is checking and installing the update", name=transfer.peer_name)
             out.final_reply(INSTALL_TIMEOUT)
-            transfer._finish(DONE, f"{transfer.peer_name} now has version {release.label} and is restarting.")
+            transfer._finish(DONE, Msg("{name} now has version {version} and is restarting.",
+                                       name=transfer.peer_name, version=release.label))
 
         out.run(body)
 
@@ -395,18 +405,19 @@ class UpdateService:
             send_frame(conn, {"type": "reject", "reason": reason})
 
         if not self.installable():
-            return refuse("That copy of the app can't update itself (it isn't the packaged app, or its "
-                          "folder is read-only). Copy the new version there by hand.")
+            return refuse(Msg("That copy of the app can't update itself (it isn't the packaged app, or its "
+                              "folder is read-only). Copy the new version there by hand."))
         try:
             payload = verify_release(msg.get("release"), self.public_key)
         except UpdateError as exc:
-            return refuse(str(exc))
+            return refuse(describe_error(exc))
         entry = payload["builds"].get(self.target)
         if entry is None:
-            return refuse(f"The update has no version for {self.target}.")
+            return refuse(Msg("The update has no version for {system}.", system=self.target))
         new_label = display_version(payload["version"], payload["build"])
         if version_key(payload["version"], payload["build"]) <= self.current:
-            return refuse(f"That computer already has version {display_version(VERSION, BUILD)} or newer.")
+            return refuse(Msg("That computer already has version {version} or newer.",
+                              version=display_version(VERSION, BUILD)))
 
         transfer = Transfer("receive", name, peer_ip, kind="update", items=[new_label],
                             file_count=1, total_bytes=entry["size"])
@@ -414,20 +425,21 @@ class UpdateService:
         offer = UpdateOffer(transfer, name, peer_ip, display_version(VERSION, BUILD), new_label)
         download = self.download_path()
         try:
-            transfer.message = "Waiting for you to accept the update"
+            transfer.message = Msg("Waiting for you to accept the update")
             if self.auto_install():
                 offer.answer(True)
             else:
                 self.present(offer)
             answer = wait_for_answer(conn, offer)
             if answer is None:
-                transfer._finish(CANCELLED, "The sender cancelled before you answered.")
+                transfer._finish(CANCELLED, Msg("The sender cancelled before you answered."))
                 return
             if not answer:
                 answered = offer._decided.is_set()
-                transfer._finish(DECLINED, "You chose not to update now." if answered else "Not answered in time.")
-                send_frame(conn, {"type": "reject", "reason": "The other computer chose not to update now."
-                                  if answered else "Nobody answered on the other computer."})
+                transfer._finish(DECLINED, Msg("You chose not to update now.") if answered
+                                 else Msg("Not answered in time."))
+                send_frame(conn, {"type": "reject", "reason": Msg("The other computer chose not to update now.")
+                                  if answered else Msg("Nobody answered on the other computer.")})
                 return
             send_frame(conn, {"type": "accept"})
             transfer.state = ACTIVE
@@ -436,40 +448,41 @@ class UpdateService:
             conn.settimeout(IO_TIMEOUT)
             header = recv_frame(conn)
             if header.get("type") == "cancel":
-                raise remote_stop(header, "The sender cancelled the update.")
+                raise remote_stop(header, Msg("The sender cancelled the update."))
             if header.get("type") != "file" or header.get("size") != entry["size"]:
                 raise ProtocolError("unexpected update data")
             with open(download, "wb") as f:
                 digest = recv_file_data(conn, f, transfer, entry["file"])
             if digest != entry["sha256"]:
-                raise UpdateError("The downloaded update doesn't match its signature, so it was discarded.")
+                raise UpdateError(Msg("The downloaded update doesn't match its signature, so it was discarded."))
             transfer.files_done = 1
-            transfer.message = "Checking that the new version starts"
+            transfer.message = Msg("Checking that the new version starts")
             if not IS_WINDOWS:
                 os.chmod(download, 0o755)
             if self.self_test(download) != (payload["version"], payload["build"]):
-                raise UpdateError("The new version didn't start correctly on this computer, "
-                                  "so the current version was kept.")
+                raise UpdateError(Msg("The new version didn't start correctly on this computer, "
+                                      "so the current version was kept."))
             self.install(download)
             send_frame(conn, {"type": "done"})
             log.info("Installed version %s (build %s) from %s", payload["version"], payload["build"], name)
-            transfer._finish(DONE, f"Version {new_label} installed. Restarting…")
+            transfer._finish(DONE, Msg("Version {version} installed. Restarting…", version=new_label))
             self.on_installed(new_label)
         except Cancelled:
-            transfer._finish(CANCELLED, "You cancelled the update.")
-            abort_politely(conn, "The other computer cancelled the update.")
+            transfer._finish(CANCELLED, Msg("You cancelled the update."))
+            abort_politely(conn, Msg("The other computer cancelled the update."))
         except RemoteCancelled as exc:
             finish_from_remote(transfer, exc)
         except UpdateError as exc:
             log.warning("Update from %s failed: %s", peer_ip, exc)
-            transfer._finish(FAILED, str(exc))
-            abort_politely(conn, f"The update failed on the other computer: {exc}", failed=True)
+            transfer._finish(FAILED, describe_error(exc))
+            abort_politely(conn, Msg("The update failed on the other computer: {error}", error=describe_error(exc)),
+                           failed=True)
         except OSError as exc:
             log.warning("Update from %s failed: %s", peer_ip, exc)
             transfer._finish(FAILED, describe_error(exc))
             if not isinstance(exc, (ConnectionError, TimeoutError)):
-                abort_politely(conn, f"The update failed on the other computer: {describe_error(exc)}",
-                               failed=True)
+                abort_politely(conn, Msg("The update failed on the other computer: {error}",
+                                         error=describe_error(exc)), failed=True)
         except ProtocolError as exc:
             transfer._finish(FAILED, describe_error(exc))
         finally:

@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Callable
 
 from . import os_label
+from .i18n import Msg, tr
 from .pathsafe import plan_destinations, split_relpath, top_level_paths
 from .protocol import (
     ABORT_MARKER, APP_ID, CHUNK_SIZE, DIGEST_SIZE, END_OF_FILE, MAX_CHUNK, PROTOCOL_VERSION,
@@ -119,16 +120,21 @@ def wait_for_answer(conn: socket.socket, offer, timeout: float = DECISION_TIMEOU
 
 
 def describe_error(exc: BaseException) -> str:
+    """A message for the user. Our own messages are Msg objects, so the window can translate them."""
     if isinstance(exc, RemoteCancelled):
-        return str(exc) or "The other computer stopped the transfer."
+        return str(exc) or Msg("The other computer stopped the transfer.")
     if isinstance(exc, (socket.timeout, TimeoutError)):
-        return "The other computer stopped responding."
+        return Msg("The other computer stopped responding.")
     if isinstance(exc, ConnectionRefusedError):
-        return "Could not connect. Is the app open on the other computer?"
+        return Msg("Could not connect. Is the app open on the other computer?")
     if isinstance(exc, (ConnectionError, BrokenPipeError)):
-        return "The connection to the other computer was lost."
+        return Msg("The connection to the other computer was lost.")
     if isinstance(exc, ProtocolError):
-        return f"The other computer sent unexpected data ({exc}). Are both apps the same version?"
+        detail = exc.args[0] if exc.args else ""
+        return Msg("The other computer sent unexpected data ({detail}). Are both apps the same version?",
+                   detail=detail)
+    if exc.args and isinstance(exc.args[0], Msg):
+        return exc.args[0]
     if isinstance(exc, OSError) and exc.strerror:
         return exc.strerror + (f": {exc.filename}" if exc.filename else "")
     return str(exc) or exc.__class__.__name__
@@ -185,7 +191,7 @@ def recv_file_data(conn: socket.socket, f, transfer: Transfer, name: str) -> str
         if length == END_OF_FILE:
             break
         if length == ABORT_MARKER:
-            raise remote_stop(recv_frame(conn), "The sender cancelled the transfer.")
+            raise remote_stop(recv_frame(conn), Msg("The sender cancelled the transfer."))
         if length > MAX_CHUNK:
             raise ProtocolError("chunk too large")
         remaining = length
@@ -199,7 +205,7 @@ def recv_file_data(conn: socket.socket, f, transfer: Transfer, name: str) -> str
             transfer.done_bytes += n
         transfer._check_cancel()
     if recv_exact(conn, DIGEST_SIZE) != digest.digest():
-        raise ProtocolError(f"{name} was damaged in transit (checksum mismatch)")
+        raise ProtocolError(Msg("{name} was damaged in transit (checksum mismatch)", name=name))
     return digest.hexdigest()
 
 
@@ -286,12 +292,12 @@ class Receiver:
         sender = offer_msg.get("sender") if isinstance(offer_msg.get("sender"), dict) else {}
         transfer = Transfer("receive", str(sender.get("name") or peer_ip)[:100], peer_ip)
         if offer_msg.get("version") != PROTOCOL_VERSION:
-            send_frame(conn, {"type": "reject", "reason": "The two apps are different versions. Please update both."})
+            send_frame(conn, {"type": "reject", "reason": Msg("The two apps are different versions. Please update both.")})
             return
         try:
             items = _validate_items(offer_msg.get("items"))
         except ValueError:
-            send_frame(conn, {"type": "reject", "reason": "The other computer refused the file list (invalid names)."})
+            send_frame(conn, {"type": "reject", "reason": Msg("The other computer refused the file list (invalid names).")})
             return
 
         save_dir = Path(self.save_dir())
@@ -313,17 +319,17 @@ class Receiver:
             transfer._finish(state, message)
 
         try:
-            transfer.message = "Waiting for you to accept"
+            transfer.message = Msg("Waiting for you to accept")
             self.present(offer)
             answer = wait_for_answer(conn, offer)
             if answer is None:
-                transfer._finish(CANCELLED, "The sender cancelled before you answered.")
+                transfer._finish(CANCELLED, Msg("The sender cancelled before you answered."))
                 return
             if not answer:
                 answered = offer._decided.is_set()
-                transfer._finish(DECLINED, "You declined these files." if answered else "Not answered in time.")
-                send_frame(conn, {"type": "reject", "reason": "The other computer declined the files." if answered
-                                  else "Nobody answered on the other computer."})
+                transfer._finish(DECLINED, Msg("You declined these files.") if answered else Msg("Not answered in time."))
+                send_frame(conn, {"type": "reject", "reason": Msg("The other computer declined the files.") if answered
+                                  else Msg("Nobody answered on the other computer.")})
                 return
             save_dir.mkdir(parents=True, exist_ok=True)
             with self._reserve_lock:
@@ -341,19 +347,24 @@ class Receiver:
                     dest.mkdir(parents=True, exist_ok=True)
             self._receive_files(conn, transfer, items, destinations)
             send_frame(conn, {"type": "done"})
-            note = f" ({transfer.skipped} could not be read on the other computer)" if transfer.skipped else ""
-            transfer._finish(DONE, f"Saved to {folder}{note}")
+            if transfer.skipped:
+                done = Msg("Saved to {folder} ({n} file could not be read on the other computer)",
+                           "Saved to {folder} ({n} files could not be read on the other computer)",
+                           n=transfer.skipped, folder=str(folder))
+            else:
+                done = Msg("Saved to {folder}", folder=str(folder))
+            transfer._finish(DONE, done)
         except Cancelled:
-            finish(CANCELLED, "You cancelled the transfer.")
-            abort_politely(conn, "The other computer cancelled the transfer.")
+            finish(CANCELLED, Msg("You cancelled the transfer."))
+            abort_politely(conn, Msg("The other computer cancelled the transfer."))
         except RemoteCancelled as exc:
             finish(FAILED if exc.failed else CANCELLED, describe_error(exc))
         except OSError as exc:
             log.warning("Receive from %s failed: %s", peer_ip, exc)
             finish(FAILED, describe_error(exc))
             if not isinstance(exc, (ConnectionError, socket.timeout, TimeoutError)):
-                abort_politely(conn, f"The other computer could not save the files: {describe_error(exc)}",
-                               failed=True)
+                abort_politely(conn, Msg("The other computer could not save the files: {error}",
+                                         error=describe_error(exc)), failed=True)
         except ProtocolError as exc:
             finish(FAILED, describe_error(exc))
         finally:
@@ -370,7 +381,7 @@ class Receiver:
             if kind == "end":
                 return
             if kind == "cancel":
-                raise remote_stop(msg, "The sender cancelled the transfer.")
+                raise remote_stop(msg, Msg("The sender cancelled the transfer."))
             index = msg.get("index")
             if not isinstance(index, int) or not 0 <= index < len(items) or items[index]["kind"] != "file":
                 raise ProtocolError("bad file index")
@@ -422,7 +433,7 @@ def make_transfer_folder(base: Path, file_count: int, when: float | None = None)
             numbers.append(int(match.group(1)))
     number = max(numbers, default=0) + 1
     clock = time.strftime("%Y-%m-%d %H.%M.%S", time.localtime(when))
-    files = f"{file_count} file{'' if file_count == 1 else 's'}"
+    files = tr("{n} file", "{n} files", n=file_count)  # in the app's language, since it's shown in folders
     while True:
         folder = base / f"{number:04d} {clock} {files}"
         try:
@@ -495,12 +506,12 @@ class Outgoing:
     def offer(self, message: dict, waiting_text: str) -> bool:
         """Connect and send the opening message. False if the other side declined."""
         t = self.transfer
-        t.message = "Connecting"
+        t.message = Msg("Connecting")
         try:
             self.sock = socket.create_connection((self.ip, self.port), timeout=8)
         except OSError as exc:
-            raise OSError(f"Could not connect to {t.peer_name}. Make sure the app is open there "
-                          "and that its firewall allows it.") from exc
+            raise OSError(Msg("Could not connect to {name}. Make sure the app is open there "
+                              "and that its firewall allows it.", name=t.peer_name)) from exc
         self.sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         self.sock.settimeout(IO_TIMEOUT)
         send_frame(self.sock, message)
@@ -508,7 +519,7 @@ class Outgoing:
         t.message = waiting_text
         reply = _wait_for_frame(self.sock, t, DECISION_TIMEOUT + 30)
         if reply.get("type") == "reject":
-            t._finish(DECLINED, reply.get("reason") or "The other computer declined.")
+            t._finish(DECLINED, reply.get("reason") or Msg("The other computer declined."))
             return False
         if reply.get("type") != "accept":
             raise ProtocolError(f"unexpected reply {reply.get('type')!r}")
@@ -525,7 +536,7 @@ class Outgoing:
     def final_reply(self, timeout: float) -> dict:
         reply = _wait_for_frame(self.sock, self.transfer, timeout)
         if reply.get("type") == "cancel":
-            raise remote_stop(reply, "The other computer stopped the transfer.")
+            raise remote_stop(reply, Msg("The other computer stopped the transfer."))
         if reply.get("type") != "done":
             raise ProtocolError(f"unexpected reply {reply.get('type')!r}")
         return reply
@@ -535,9 +546,9 @@ class Outgoing:
         try:
             body()
         except Cancelled:
-            t._finish(CANCELLED, "You cancelled the transfer.")
+            t._finish(CANCELLED, Msg("You cancelled the transfer."))
             if self.sock:
-                abort_politely(self.sock, "The sender cancelled the transfer.", self.in_file_data)
+                abort_politely(self.sock, Msg("The sender cancelled the transfer."), self.in_file_data)
         except RemoteCancelled as exc:
             finish_from_remote(t, exc)
         except (OSError, ProtocolError) as exc:
@@ -605,11 +616,11 @@ def send_files(transfer: Transfer, ip: str, port: int, paths: list[str], identit
 
     def body() -> None:
         transfer.state = PREPARING
-        transfer.message = "Preparing files"
+        transfer.message = Msg("Preparing files")
         entries = build_manifest(paths)
         files = [e for e in entries if e.kind == "file"]
         if not entries:
-            raise OSError("Nothing to send - the selected files could not be found.")
+            raise OSError(Msg("Nothing to send - the selected files could not be found."))
         transfer.items = _top_level_names([{"path": e.rel} for e in entries])
         transfer.file_count = len(files)
         transfer.total_bytes = sum(e.size for e in files)
@@ -619,7 +630,7 @@ def send_files(transfer: Transfer, ip: str, port: int, paths: list[str], identit
             "app": APP_ID, "version": PROTOCOL_VERSION, "type": "offer",
             "sender": {"id": identity["id"], "name": identity["name"], "os": os_label()},
             "items": [{"kind": e.kind, "path": e.rel, "size": e.size} for e in entries],
-        }, f"Waiting for {transfer.peer_name} to accept")
+        }, Msg("Waiting for {name} to accept", name=transfer.peer_name))
         if not accepted:
             return
 
@@ -645,10 +656,14 @@ def send_files(transfer: Transfer, ip: str, port: int, paths: list[str], identit
 
         send_frame(out.sock, {"type": "end"})
         transfer.current_file = ""
-        transfer.message = "Waiting for the other computer to finish saving"
+        transfer.message = Msg("Waiting for the other computer to finish saving")
         out.final_reply(IO_TIMEOUT)
-        note = f" ({transfer.skipped} could not be read and were skipped)" if transfer.skipped else ""
-        transfer._finish(DONE, f"Delivered to {transfer.peer_name}{note}")
+        if transfer.skipped:
+            transfer._finish(DONE, Msg("Delivered to {name} ({n} file could not be read and was skipped)",
+                                       "Delivered to {name} ({n} files could not be read and were skipped)",
+                                       n=transfer.skipped, name=transfer.peer_name))
+        else:
+            transfer._finish(DONE, Msg("Delivered to {name}", name=transfer.peer_name))
 
     out.run(body)
 
@@ -672,7 +687,7 @@ def _check_receiver(sock: socket.socket) -> None:
     if readable:
         msg = recv_frame(sock)
         if msg.get("type") == "cancel":
-            raise remote_stop(msg, "The other computer stopped the transfer.")
+            raise remote_stop(msg, Msg("The other computer stopped the transfer."))
 
 
 def _pending_cancel(sock: socket.socket) -> RemoteCancelled | None:
@@ -683,7 +698,7 @@ def _pending_cancel(sock: socket.socket) -> RemoteCancelled | None:
             sock.settimeout(1)
             msg = recv_frame(sock)
             if msg.get("type") == "cancel":
-                return remote_stop(msg, "The other computer stopped the transfer.")
+                return remote_stop(msg, Msg("The other computer stopped the transfer."))
     except (OSError, ProtocolError, ValueError):
         pass
     return None

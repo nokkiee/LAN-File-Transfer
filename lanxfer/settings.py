@@ -43,6 +43,7 @@ class Settings:
     manual_peers: list[str] = field(default_factory=list)
     theme: str = "system"  # "system", "light" or "dark"
     auto_install_updates: bool = False  # install updates from your other computers without asking
+    language: str = "auto"  # "auto" (the system's language), "en", "pl", "de", "fr" or "es"
 
     @classmethod
     def load(cls) -> "Settings":

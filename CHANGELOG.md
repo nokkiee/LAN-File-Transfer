@@ -5,6 +5,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- **Languages:** Polish, German, French and Spanish, besides English. The app follows the computer's language, or you choose one in *Settings → Language*. Plurals, decimal commas and month names follow the language, and Qt's own buttons and file dialogs are translated too. Messages sent between computers stay in English underneath, so each computer shows them in its own language.
+- The numbered folders for received files are named in the app's language (for example `0012 2026-11-06 09.15.00 5 plików`).
+
 ## [1.2.0] - 2026-11-06
 
 ### Added

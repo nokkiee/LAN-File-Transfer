@@ -47,6 +47,10 @@ See [CHANGELOG.md](CHANGELOG.md) for what changed in each version.
 Use the **◐ Auto / ☀ Light / ☾ Dark** button in the top-right corner (or *Settings*)
 to choose the look. *Auto* follows your system's light/dark setting.
 
+The app speaks **English, Polski, Deutsch, Français and Español**. It follows
+your computer's language; to pick another one, open *Settings → Language* and
+restart the app when it asks.
+
 Each transfer you receive gets its own numbered folder, named with the order
 it arrived in, the date and time, and how many files it holds, e.g.
 `0007 2026-10-12 12.32.02 7 files`. Windows doesn't allow `:` in names, so the time uses

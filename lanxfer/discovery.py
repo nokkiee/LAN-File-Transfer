@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from typing import Callable
 
 from . import IS_LINUX, IS_MAC, IS_WINDOWS
+from .i18n import Msg
 from .protocol import APP_ID, DEFAULT_TCP_PORT, DISCOVERY_PORT, PROTOCOL_VERSION, recv_frame, send_frame
 
 log = logging.getLogger(__name__)
@@ -153,7 +154,8 @@ class Discovery:
         try:
             sock.bind(("", self.port))
         except OSError as exc:
-            self.error = f"Automatic discovery is unavailable (UDP port {self.port}: {exc})."
+            self.error = Msg("Automatic discovery is unavailable (UDP port {port}: {error}).",
+                             port=self.port, error=str(exc))
             log.error(self.error)
             sock.close()
         else:

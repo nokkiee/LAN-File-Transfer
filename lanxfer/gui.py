@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
 
 from . import APP_NAME, VERSION, os_label, updates
 from .discovery import Discovery, Peer, parse_address
+from .i18n import AUTO, LANGUAGES, decimal, tr, tr_msg
 from .icon import app_icon
 from .settings import Settings
 from .theme import THEMES, ThemeManager
@@ -32,26 +33,26 @@ log = logging.getLogger(__name__)
 def human_size(n: float) -> str:
     for unit in ("B", "KB", "MB", "GB"):
         if abs(n) < 1024:
-            return f"{n:.0f} {unit}" if unit == "B" else f"{n:.1f} {unit}"
+            return f"{n:.0f} {tr(unit)}" if unit == "B" else f"{decimal(n)} {tr(unit)}"
         n /= 1024
-    return f"{n:.2f} TB"
+    return f"{decimal(n, 2)} {tr('TB')}"
 
 
 def human_duration(seconds: float) -> str:
     seconds = int(max(0, seconds))
     if seconds < 60:
-        return f"{seconds} s"
+        return tr("{s} s", s=seconds)
     if seconds < 3600:
-        return f"{seconds // 60} min {seconds % 60:02d} s"
-    return f"{seconds // 3600} h {seconds % 3600 // 60:02d} min"
+        return tr("{m} min {s:02d} s", m=seconds // 60, s=seconds % 60)
+    return tr("{h} h {m:02d} min", h=seconds // 3600, m=seconds % 3600 // 60)
 
 
 def open_folder(path: str) -> None:
     QDesktopServices.openUrl(QUrl.fromLocalFile(path))
 
 
-def plural(n: int, word: str) -> str:
-    return f"{n} {word}{'' if n == 1 else 's'}"
+def files_text(n: int) -> str:
+    return tr("{n} file", "{n} files", n=n)
 
 
 # ---------------------------------------------------------------------------
@@ -128,14 +129,14 @@ class TransferRow(QFrame):
         self.detail.setWordWrap(True)
         self.detail.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
 
-        self.cancel_btn = QPushButton("Cancel")
+        self.cancel_btn = QPushButton(tr("Cancel"))
         self.cancel_btn.clicked.connect(transfer.cancel)
-        self.open_btn = QPushButton("Open folder")
+        self.open_btn = QPushButton(tr("Open folder"))
         self.open_btn.clicked.connect(lambda: open_folder(transfer.save_dir))
         self.open_btn.hide()
         self.remove_btn = QToolButton()
         self.remove_btn.setText("✕")
-        self.remove_btn.setToolTip("Remove from list")
+        self.remove_btn.setToolTip(tr("Remove from list"))
         self.remove_btn.setAutoRaise(True)
         self.remove_btn.clicked.connect(lambda: self.on_remove(self))
         self.remove_btn.hide()
@@ -155,6 +156,30 @@ class TransferRow(QFrame):
         layout.addLayout(bottom)
         self.refresh()
 
+    @staticmethod
+    def _title(t: Transfer) -> str:
+        done = t.state == DONE
+        name = t.peer_name
+        if t.kind == "update":
+            version = t.items[0] if t.items else "?"
+            if t.direction == "send":
+                return (tr("Updated {name} to version {version}", name=name, version=version) if done
+                        else tr("Updating {name} to version {version}", name=name, version=version))
+            return (tr("Installed version {version} from {name}", name=name, version=version) if done
+                    else tr("Receiving version {version} from {name}", name=name, version=version))
+        n = len(t.items)
+        if t.direction == "send":
+            if n == 1:
+                return (tr("Sent “{item}” to {name}", item=t.items[0], name=name) if done
+                        else tr("Sending “{item}” to {name}", item=t.items[0], name=name))
+            return (tr("Sent {n} item to {name}", "Sent {n} items to {name}", n=n, name=name) if done
+                    else tr("Sending {n} item to {name}", "Sending {n} items to {name}", n=n, name=name))
+        if n == 1:
+            return (tr("Received “{item}” from {name}", item=t.items[0], name=name) if done
+                    else tr("Receiving “{item}” from {name}", item=t.items[0], name=name))
+        return (tr("Received {n} item from {name}", "Received {n} items from {name}", n=n, name=name) if done
+                else tr("Receiving {n} item from {name}", "Receiving {n} items from {name}", n=n, name=name))
+
     def _speed(self) -> float:
         t = self.transfer
         now = time.monotonic()
@@ -168,37 +193,26 @@ class TransferRow(QFrame):
         t = self.transfer
         if self._final_rendered:
             return
-        done = t.state == DONE
-        if t.kind == "update":
-            version = t.items[0] if t.items else "?"
-            if t.direction == "send":
-                text = f"↑  {'Updated' if done else 'Updating'} {t.peer_name} to version {version}"
-            else:
-                text = f"↓  {'Installed' if done else 'Receiving'} version {version} from {t.peer_name}"
-        else:
-            what = f"“{t.items[0]}”" if len(t.items) == 1 else plural(len(t.items), "item")
-            arrow, verb_now, verb_done, prep = (("↑", "Sending", "Sent", "to") if t.direction == "send"
-                                                else ("↓", "Receiving", "Received", "from"))
-            text = f"{arrow}  {verb_done if done else verb_now} {what} {prep} {t.peer_name}"
-        self.title.setText(text)
+        self.title.setText(("↑  " if t.direction == "send" else "↓  ") + self._title(t))
         fraction = t.done_bytes / t.total_bytes if t.total_bytes else (1.0 if t.state == DONE else 0.0)
 
         if t.state in (WAITING, PREPARING):
             self.bar.setRange(0, 0)  # busy animation
             self.status.setText("")
-            self.detail.setText((t.message or "Starting") + "…")
+            self.detail.setText((tr_msg(t.message) or tr("Starting")) + "…")
         elif t.state == ACTIVE:
             self.bar.setRange(0, 1000)
             self.bar.setValue(int(fraction * 1000))
             speed = self._speed()
-            parts = [f"{human_size(t.done_bytes)} of {human_size(t.total_bytes)}"]
+            parts = [tr("{done} of {total}", done=human_size(t.done_bytes), total=human_size(t.total_bytes))]
             if speed > 0:
                 parts.append(f"{human_size(speed)}/s")
-                parts.append(f"about {human_duration((t.total_bytes - t.done_bytes) / speed)} left")
+                parts.append(tr("about {time} left", time=human_duration((t.total_bytes - t.done_bytes) / speed)))
             if t.file_count > 1:
-                parts.append(f"file {min(t.files_done + 1, t.file_count)} of {t.file_count}")
+                parts.append(tr("file {current} of {total}", current=min(t.files_done + 1, t.file_count),
+                                total=t.file_count))
             self.status.setText(f"{fraction * 100:.0f}%")
-            self.detail.setText(t.message or " · ".join(parts))
+            self.detail.setText(tr_msg(t.message) or " · ".join(parts))
             self.detail.setToolTip(t.current_file)
         else:
             self._final_rendered = True
@@ -208,14 +222,17 @@ class TransferRow(QFrame):
             self.remove_btn.show()
             if t.state == DONE:
                 elapsed = (t.finished or time.monotonic()) - t.started
-                self.status.setText("✓ Done")
-                count = "" if t.kind == "update" else f"{plural(t.files_done, 'file')}, "
-                self.detail.setText(f"{count}{human_size(t.done_bytes)} in {human_duration(elapsed)}. {t.message}")
+                self.status.setText("✓ " + tr("Done"))
+                summary = tr("{size} in {time}", size=human_size(t.done_bytes), time=human_duration(elapsed))
+                if t.kind != "update":
+                    summary = f"{files_text(t.files_done)}, {summary}"
+                self.detail.setText(f"{summary}. {tr_msg(t.message)}")
                 if t.direction == "receive" and t.kind == "files":
                     self.open_btn.show()
             else:
-                self.status.setText({FAILED: "✗ Failed", CANCELLED: "Cancelled", DECLINED: "Declined"}[t.state])
-                self.detail.setText(t.message)
+                self.status.setText({FAILED: "✗ " + tr("Failed"), CANCELLED: tr("Cancelled"),
+                                     DECLINED: tr("Declined")}[t.state])
+                self.detail.setText(tr_msg(t.message))
                 if t.direction == "receive" and t.kind == "files" and t.files_done:
                     self.open_btn.show()
 
@@ -281,7 +298,7 @@ class _QuestionDialog(QDialog):
 
 class OfferDialog(_QuestionDialog):
     def __init__(self, offer: Offer, parent=None):
-        super().__init__(offer, "Incoming files", parent)
+        super().__init__(offer, tr("Incoming files"), parent)
 
         files = [i for i in offer.items if i["kind"] == "file"]
         total = sum(i["size"] for i in files)
@@ -289,8 +306,9 @@ class OfferDialog(_QuestionDialog):
         for item in offer.items:
             groups.setdefault(item["path"].split("/")[0], []).append(item)
 
-        heading = QLabel(f"<b>{_esc(offer.sender_name)}</b> ({_esc(offer.sender_os)} · {offer.sender_ip}) "
-                         f"wants to send you {plural(len(files), 'file')} ({human_size(total)}).")
+        heading = QLabel(tr("<b>{name}</b> ({os} · {ip}) wants to send you {files} ({size}).",
+                            name=_esc(offer.sender_name), os=_esc(offer.sender_os), ip=offer.sender_ip,
+                            files=files_text(len(files)), size=human_size(total)))
         heading.setWordWrap(True)
 
         listing = QListWidget()
@@ -300,7 +318,8 @@ class OfferDialog(_QuestionDialog):
             if is_dir:
                 count = sum(1 for m in members if m["kind"] == "file")
                 size = sum(m["size"] for m in members)
-                text = f"{name}   —   folder, {plural(count, 'file')}, {human_size(size)}"
+                text = tr("{name}   —   folder, {files}, {size}", name=name, files=files_text(count),
+                          size=human_size(size))
                 icon = provider.icon(QFileIconProvider.IconType.Folder)
             else:
                 text = f"{name}   —   {human_size(members[0]['size'])}"
@@ -308,32 +327,32 @@ class OfferDialog(_QuestionDialog):
             listing.addItem(QListWidgetItem(icon, text))
         listing.setMaximumHeight(min(220, 26 * listing.count() + 10))
 
-        where = QLabel(f"They will be saved in a new numbered folder inside: {_esc(offer.save_dir)}")
+        where = QLabel(tr("They will be saved in a new numbered folder inside: {folder}", folder=_esc(offer.save_dir)))
         where.setWordWrap(True)
         layout = self.body
         layout.addWidget(heading)
         layout.addWidget(listing)
         layout.addWidget(where)
         if offer.free_bytes is not None and offer.free_bytes < total:
-            warn = QLabel(f"⚠ Not enough free space: only {human_size(offer.free_bytes)} available.")
+            warn = QLabel(tr("⚠ Not enough free space: only {size} available.", size=human_size(offer.free_bytes)))
             warn.setStyleSheet("color: #d97706; font-weight: bold;")
             layout.addWidget(warn)
-        self._add_buttons("Accept", "Decline", "Declines automatically in {seconds} s")
+        self._add_buttons(tr("Accept"), tr("Decline"), tr("Declines automatically in {seconds} s"))
 
 
 class UpdateOfferDialog(_QuestionDialog):
     def __init__(self, offer: UpdateOffer, parent=None):
-        super().__init__(offer, "Update available", parent)
-        heading = QLabel(f"<b>{_esc(offer.sender_name)}</b> ({offer.sender_ip}) wants to update {APP_NAME} "
-                         f"on this computer from version {_esc(offer.from_version)} to "
-                         f"<b>{_esc(offer.to_version)}</b>.")
+        super().__init__(offer, tr("Update available"), parent)
+        heading = QLabel(tr("<b>{name}</b> ({ip}) wants to update {app} on this computer from version {old} "
+                            "to <b>{new}</b>.", name=_esc(offer.sender_name), ip=offer.sender_ip, app=APP_NAME,
+                            old=_esc(offer.from_version), new=_esc(offer.to_version)))
         heading.setWordWrap(True)
-        note = QLabel("The update is signed by your computer and checked before it's installed. "
-                      "The app restarts by itself afterwards, once any running transfers have finished.")
+        note = QLabel(tr("The update is signed by your computer and checked before it's installed. "
+                         "The app restarts by itself afterwards, once any running transfers have finished."))
         note.setWordWrap(True)
         self.body.addWidget(heading)
         self.body.addWidget(note)
-        self._add_buttons("Update now", "Not now", "Answers “Not now” automatically in {seconds} s")
+        self._add_buttons(tr("Update now"), tr("Not now"), tr("Answers “Not now” automatically in {seconds} s"))
 
 
 class SettingsDialog(QDialog):
@@ -342,31 +361,40 @@ class SettingsDialog(QDialog):
         super().__init__(parent)
         self.settings = settings
         self.themes = themes
-        self.setWindowTitle("Settings")
+        self.setWindowTitle(tr("Settings"))
         self.setMinimumWidth(520)
 
         self.name = QLineEdit(settings.device_name)
         self.name.setMaxLength(60)
         self.folder = QLineEdit(settings.download_dir)
-        browse = QPushButton("Browse…")
+        browse = QPushButton(tr("Browse…"))
         browse.clicked.connect(self._browse)
         folder_row = QHBoxLayout()
         folder_row.addWidget(self.folder, 1)
         folder_row.addWidget(browse)
-        self.ask = QCheckBox("Ask me before accepting incoming files (recommended)")
+        self.ask = QCheckBox(tr("Ask me before accepting incoming files (recommended)"))
         self.ask.setChecked(settings.ask_before_receiving)
         self.theme = QComboBox()
         for key, label in THEMES.items():
-            self.theme.addItem(label, key)
+            self.theme.addItem(tr(label), key)
         self.theme.setCurrentIndex(max(0, self.theme.findData(settings.theme)))
+        self.language = QComboBox()
+        self.language.addItem(tr("Automatic (system language)"), AUTO)
+        for code, name in LANGUAGES.items():
+            self.language.addItem(name, code)  # each language in its own words
+        self.language.setCurrentIndex(max(0, self.language.findData(settings.language)))
 
         form = QFormLayout()
-        form.addRow("Name of this computer:", self.name)
-        form.addRow("Save received files in:", folder_row)
+        form.addRow(tr("Name of this computer:"), self.name)
+        form.addRow(tr("Save received files in:"), folder_row)
         form.addRow("", self.ask)
-        form.addRow("Appearance:", self.theme)
-        info = QLabel(f"IP address: {', '.join(addresses) or 'not connected'}<br>"
-                      f"Port: {port or 'not listening'}<br>Version {VERSION}")
+        form.addRow(tr("Appearance:"), self.theme)
+        form.addRow(tr("Language:"), self.language)
+        info = QLabel("<br>".join([
+            tr("IP address: {ip}", ip=", ".join(addresses) or tr("not connected")),
+            tr("Port: {port}", port=port or tr("not listening")),
+            tr("Version {version}", version=VERSION),
+        ]))
         info.setStyleSheet("color: gray;")
         form.addRow("", info)
 
@@ -378,7 +406,7 @@ class SettingsDialog(QDialog):
         layout.addWidget(buttons)
 
     def _browse(self) -> None:
-        path = QFileDialog.getExistingDirectory(self, "Save received files in", self.folder.text())
+        path = QFileDialog.getExistingDirectory(self, tr("Save received files in"), self.folder.text())
         if path:
             self.folder.setText(path)
 
@@ -387,6 +415,7 @@ class SettingsDialog(QDialog):
         self.settings.download_dir = self.folder.text().strip() or self.settings.download_dir
         self.settings.ask_before_receiving = self.ask.isChecked()
         self.settings.theme = self.theme.currentData()
+        self.settings.language = self.language.currentData()
         self.settings.save()
         if self.themes:
             self.themes.set(self.settings.theme)
@@ -442,8 +471,8 @@ class MainWindow(QMainWindow):
         try:
             self.manager.receiver.start(settings.tcp_port)
         except OSError as exc:
-            QMessageBox.critical(self, APP_NAME, f"This computer cannot receive files right now:\n{exc}\n\n"
-                                                 "Sending still works.")
+            QMessageBox.critical(self, APP_NAME, tr("This computer cannot receive files right now:\n{error}\n\n"
+                                                    "Sending still works.", error=exc))
         self.discovery.start()
 
         self._timer = QTimer(self)
@@ -475,15 +504,15 @@ class MainWindow(QMainWindow):
         title.setFont(f)
         self.me_label = QLabel()
         self.me_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        settings_btn = QPushButton("Settings")
+        settings_btn = QPushButton(tr("Settings"))
         settings_btn.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_FileDialogDetailedView))
         settings_btn.clicked.connect(self._open_settings)
         self.theme_btn = QToolButton()
-        self.theme_btn.setToolTip("Light or dark appearance")
+        self.theme_btn.setToolTip(tr("Light or dark appearance"))
         self.theme_btn.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         theme_menu = QMenu(self.theme_btn)
         for key, label in THEMES.items():
-            action = theme_menu.addAction(label)
+            action = theme_menu.addAction(tr(label))
             action.setCheckable(True)
             action.setData(key)
             action.triggered.connect(lambda _=False, k=key: self._set_theme(k))
@@ -511,26 +540,26 @@ class MainWindow(QMainWindow):
         self.device_list.itemDoubleClicked.connect(lambda _: self._send())
         self.device_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.device_list.customContextMenuRequested.connect(self._device_menu)
-        add_ip = QPushButton("Add computer by IP address…")
+        add_ip = QPushButton(tr("Add computer by IP address…"))
         add_ip.clicked.connect(self._add_by_ip)
-        dev_box = QGroupBox("1.  Choose the computer to send to")
+        dev_box = QGroupBox("1.  " + tr("Choose the computer to send to"))
         dev_layout = QVBoxLayout(dev_box)
         dev_layout.addWidget(self.device_list, 1)
         dev_layout.addWidget(add_ip)
 
         # 2. files
-        self.file_list = DropListWidget("Drag files or folders here\n\nor use the buttons below")
+        self.file_list = DropListWidget(tr("Drag files or folders here\n\nor use the buttons below"))
         self.file_list.setIconSize(QSize(24, 24))
         self.file_list.pathsDropped.connect(self._add_paths)
         self.file_list.model().rowsInserted.connect(self._update_send_button)
         self.file_list.model().rowsRemoved.connect(self._update_send_button)
-        add_files = QPushButton("Add files…")
+        add_files = QPushButton(tr("Add files…"))
         add_files.clicked.connect(self._pick_files)
-        add_folder = QPushButton("Add folder…")
+        add_folder = QPushButton(tr("Add folder…"))
         add_folder.clicked.connect(self._pick_folder)
-        remove = QPushButton("Remove")
+        remove = QPushButton(tr("Remove"))
         remove.clicked.connect(self._remove_selected_files)
-        clear = QPushButton("Clear")
+        clear = QPushButton(tr("Clear"))
         clear.clicked.connect(self.file_list.clear)
         file_buttons = QHBoxLayout()
         for b in (add_files, add_folder):
@@ -538,14 +567,14 @@ class MainWindow(QMainWindow):
         file_buttons.addStretch(1)
         for b in (remove, clear):
             file_buttons.addWidget(b)
-        self.send_btn = QPushButton("3.  Send")
+        self.send_btn = QPushButton("3.  " + tr("Send"))
         self.send_btn.setMinimumHeight(44)
         sf = self.send_btn.font()
         sf.setBold(True)
         sf.setPointSizeF(sf.pointSizeF() * 1.15)
         self.send_btn.setFont(sf)
         self.send_btn.clicked.connect(self._send)
-        files_box = QGroupBox("2.  Choose files and folders")
+        files_box = QGroupBox("2.  " + tr("Choose files and folders"))
         files_layout = QVBoxLayout(files_box)
         files_layout.addWidget(self.file_list, 1)
         files_layout.addLayout(file_buttons)
@@ -562,7 +591,7 @@ class MainWindow(QMainWindow):
         self.rows_widget = QWidget()
         self.rows_layout = QVBoxLayout(self.rows_widget)
         self.rows_layout.setContentsMargins(0, 0, 0, 0)
-        self.no_transfers = QLabel("Nothing sent or received yet.")
+        self.no_transfers = QLabel(tr("Nothing sent or received yet."))
         self.no_transfers.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.no_transfers.setEnabled(False)
         self.rows_layout.addWidget(self.no_transfers)
@@ -573,15 +602,15 @@ class MainWindow(QMainWindow):
         scroll.setWidget(self.rows_widget)
         self.save_label = QLabel()
         self.save_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        change = QPushButton("Change…")
+        change = QPushButton(tr("Change…"))
         change.clicked.connect(self._change_save_dir)
-        open_btn = QPushButton("Open")
+        open_btn = QPushButton(tr("Open"))
         open_btn.clicked.connect(self._open_save_dir)
         save_row = QHBoxLayout()
         save_row.addWidget(self.save_label, 1)
         save_row.addWidget(change)
         save_row.addWidget(open_btn)
-        tx_box = QGroupBox("Transfers")
+        tx_box = QGroupBox(tr("Transfers"))
         tx_layout = QVBoxLayout(tx_box)
         tx_layout.addWidget(scroll, 1)
         tx_layout.addLayout(save_row)
@@ -612,9 +641,9 @@ class MainWindow(QMainWindow):
         icon.setPixmap(self.style().standardIcon(QStyle.StandardPixmap.SP_BrowserReload).pixmap(24, 24))
         self.banner_label = QLabel()
         self.banner_label.setWordWrap(True)
-        self.update_btn = QPushButton("Update")
+        self.update_btn = QPushButton(tr("Update"))
         self.update_btn.clicked.connect(self._update_all)
-        self.restart_btn = QPushButton("Restart now")
+        self.restart_btn = QPushButton(tr("Restart now"))
         self.restart_btn.clicked.connect(self._restart_self)
         row = QHBoxLayout(self.banner)
         row.setContentsMargins(10, 6, 10, 6)
@@ -640,21 +669,22 @@ class MainWindow(QMainWindow):
 
     def _refresh_header(self) -> None:
         addresses = self.discovery.my_addresses()
-        ip = addresses[0] if addresses else "no network connection"
-        self.me_label.setText(f"This computer: <b>{_esc(self.settings.device_name)}</b>  ·  IP {ip}  ·  {os_label()}")
-        self.me_label.setToolTip("All addresses: " + ", ".join(addresses) if addresses else "")
+        ip = addresses[0] if addresses else tr("no network connection")
+        self.me_label.setText(tr("This computer: <b>{name}</b>", name=_esc(self.settings.device_name))
+                              + f"  ·  IP {ip}  ·  {os_label()}")
+        self.me_label.setToolTip(tr("All addresses: {addresses}", addresses=", ".join(addresses)) if addresses else "")
 
     def _refresh_peers(self) -> None:
         peers = self.discovery.peers()
         view = [(p.id, p.name, p.os, p.ip, p.port, p.version, p.build) for p in peers]
         if self.discovery.error:
-            hint = self.discovery.error + "\n\nUse “Add computer by IP address…” instead."
+            hint = tr_msg(self.discovery.error) + "\n\n" + tr("Use “Add computer by IP address…” instead.")
         elif time.monotonic() - self._started < 6:
-            hint = "Looking for other computers…"
+            hint = tr("Looking for other computers…")
         else:
-            hint = ("No other computers found yet.\n\n"
-                    f"Open {APP_NAME} on the other computer and make sure both are on the same Wi-Fi.\n\n"
-                    "If a firewall question pops up, click Allow.")
+            hint = tr("No other computers found yet.\n\n"
+                      "Open {app} on the other computer and make sure both are on the same Wi-Fi.\n\n"
+                      "If a firewall question pops up, click Allow.", app=APP_NAME)
         self.device_list.set_hint(hint)
         self._refresh_banner(peers)
         outdated_ids = {p.id for p in self._outdated}
@@ -667,10 +697,10 @@ class MainWindow(QMainWindow):
         self.device_list.clear()
         icon = self.style().standardIcon(QStyle.StandardPixmap.SP_ComputerIcon)
         for peer in peers:
-            version = (f"Version {updates.display_version(peer.version, peer.build)}" if peer.version
-                       else "Older version")
+            version = (tr("Version {version}", version=updates.display_version(peer.version, peer.build))
+                       if peer.version else tr("Older version"))
             if peer.id in outdated_ids:
-                version += "  ·  update ready"
+                version += "  ·  " + tr("update ready")
             item = QListWidgetItem(icon, f"{peer.name}\n{peer.os}  ·  {peer.ip}\n{version}")
             item.setData(Qt.ItemDataRole.UserRole, peer)
             self.device_list.addItem(item)
@@ -705,15 +735,15 @@ class MainWindow(QMainWindow):
 
     def _add_by_ip(self) -> None:
         text, ok = QInputDialog.getText(
-            self, "Add computer by IP address",
-            f"Type the IP address shown at the top of {APP_NAME} on the other computer\n"
-            "(for example 192.168.1.42):")
+            self, tr("Add computer by IP address"),
+            tr("Type the IP address shown at the top of {app} on the other computer\n"
+               "(for example 192.168.1.42):", app=APP_NAME))
         if not ok or not text.strip():
             return
         try:
             ip, port = parse_address(text)
         except ValueError:
-            QMessageBox.warning(self, APP_NAME, f"“{text}” is not a valid IP address.")
+            QMessageBox.warning(self, APP_NAME, tr("“{text}” is not a valid IP address.", text=text))
             return
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
 
@@ -728,8 +758,9 @@ class MainWindow(QMainWindow):
         if peer is None:
             QMessageBox.warning(
                 self, APP_NAME,
-                f"Could not reach {address}.\n\nCheck that {APP_NAME} is open on that computer, that both "
-                "computers are on the same network, and that its firewall allows the app.")
+                tr("Could not reach {address}.\n\nCheck that {app} is open on that computer, that both "
+                   "computers are on the same network, and that its firewall allows the app.",
+                   address=address, app=APP_NAME))
             return
         if address not in self.settings.manual_peers:
             self.settings.manual_peers.append(address)
@@ -742,14 +773,14 @@ class MainWindow(QMainWindow):
             return
         peer: Peer = item.data(Qt.ItemDataRole.UserRole)
         menu = QMenu(self)
-        send = menu.addAction(f"Send files to {peer.name}")
+        send = menu.addAction(tr("Send files to {name}", name=peer.name))
         send.setEnabled(self.file_list.count() > 0)
         send.triggered.connect(self._send)
         if any(p.id == peer.id for p in self._outdated):
-            update = menu.addAction(f"Update to version {self._release.label}")
+            update = menu.addAction(tr("Update to version {version}", version=self._release.label))
             update.triggered.connect(lambda: self._push_updates([peer]))
         if peer.manual:
-            forget = menu.addAction("Forget this computer")
+            forget = menu.addAction(tr("Forget this computer"))
             forget.triggered.connect(lambda: self._forget(peer))
         menu.exec(self.device_list.viewport().mapToGlobal(pos))
 
@@ -776,18 +807,18 @@ class MainWindow(QMainWindow):
             existing.add(path)
             info = QFileInfo(path)
             name = Path(path).name or path
-            detail = "folder" if info.isDir() else human_size(info.size())
+            detail = tr("folder") if info.isDir() else human_size(info.size())
             item = QListWidgetItem(provider.icon(info), f"{name}   —   {detail}")
             item.setToolTip(path)
             item.setData(Qt.ItemDataRole.UserRole, path)
             self.file_list.addItem(item)
 
     def _pick_files(self) -> None:
-        paths, _ = QFileDialog.getOpenFileNames(self, "Choose files to send", str(Path.home()))
+        paths, _ = QFileDialog.getOpenFileNames(self, tr("Choose files to send"), str(Path.home()))
         self._add_paths(paths)
 
     def _pick_folder(self) -> None:
-        path = QFileDialog.getExistingDirectory(self, "Choose a folder to send", str(Path.home()))
+        path = QFileDialog.getExistingDirectory(self, tr("Choose a folder to send"), str(Path.home()))
         if path:
             self._add_paths([path])
 
@@ -809,11 +840,12 @@ class MainWindow(QMainWindow):
         count = self.file_list.count()
         self.send_btn.setEnabled(bool(peer and count))
         if peer and count:
-            self.send_btn.setText(f"3.  Send {plural(count, 'item')} to {peer.name}")
+            self.send_btn.setText("3.  " + tr("Send {n} item to {name}", "Send {n} items to {name}", n=count,
+                                              name=peer.name))
             self.send_btn.setToolTip("")
         else:
-            self.send_btn.setText("3.  Send")
-            self.send_btn.setToolTip("Choose a computer and add some files first.")
+            self.send_btn.setText("3.  " + tr("Send"))
+            self.send_btn.setToolTip(tr("Choose a computer and add some files first."))
 
     def _send(self) -> None:
         peer = self._selected_peer()
@@ -841,10 +873,10 @@ class MainWindow(QMainWindow):
         QApplication.alert(self)
 
     def _update_save_label(self) -> None:
-        self.save_label.setText(f"Received files are saved in:  {self.settings.download_dir}")
+        self.save_label.setText(tr("Received files are saved in:  {folder}", folder=self.settings.download_dir))
 
     def _change_save_dir(self) -> None:
-        path = QFileDialog.getExistingDirectory(self, "Save received files in", self.settings.download_dir)
+        path = QFileDialog.getExistingDirectory(self, tr("Save received files in"), self.settings.download_dir)
         if path:
             self.settings.download_dir = path
             self.settings.save()
@@ -855,12 +887,25 @@ class MainWindow(QMainWindow):
         open_folder(self.settings.download_dir)
 
     def _open_settings(self) -> None:
+        language_before = self.settings.language
         dialog = SettingsDialog(self.settings, self.discovery.my_addresses(), self.manager.receiver.port,
                                 self.themes, self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             self._update_save_label()
             self._refresh_header()
             self._update_theme_button()
+            if self.settings.language != language_before:
+                self._offer_language_restart()
+
+    def _offer_language_restart(self) -> None:
+        # Shown in the newly chosen language, so the user can read it.
+        from .i18n import current_language, set_language
+        shown = current_language()
+        set_language(self.settings.language)
+        question = tr("The new language is used after {app} restarts. Restart now?", app=APP_NAME)
+        set_language(shown)
+        if QMessageBox.question(self, APP_NAME, question) == QMessageBox.StandardButton.Yes:
+            self._restart_self()
 
     def _set_theme(self, theme: str) -> None:
         self.settings.theme = theme
@@ -870,7 +915,8 @@ class MainWindow(QMainWindow):
         self._update_theme_button()
 
     def _update_theme_button(self) -> None:
-        self.theme_btn.setText({"light": "☀ Light", "dark": "☾ Dark"}.get(self.settings.theme, "◐ Auto"))
+        self.theme_btn.setText({"light": "☀ " + tr("Light"), "dark": "☾ " + tr("Dark")}
+                               .get(self.settings.theme, "◐ " + tr("Auto")))
 
     # -- app updates ------------------------------------------------------
 
@@ -895,20 +941,22 @@ class MainWindow(QMainWindow):
 
         lines = []
         if self._restart_pending:
-            lines.append("Update installed. The app restarts as soon as the running transfers finish.")
+            lines.append(tr("Update installed. The app restarts as soon as the running transfers finish."))
         else:
             if self._outdated:
-                lines.append(f"Version {_esc(release.label)} is ready for {names(self._outdated)}.")
+                lines.append(tr("Version {version} is ready for {names}.", version=_esc(release.label),
+                                names=names(self._outdated)))
             if stuck:
-                lines.append(f"{names(stuck)} can't update automatically (an older or Mac version, or not the "
-                             "packaged app). Download the new version there from the Releases page.")
+                lines.append(tr("{names} can't update automatically (an older or Mac version, or not the "
+                                "packaged app). Download the new version there from the Releases page.",
+                                names=names(stuck)))
             if self_stale:
-                lines.append(f"Version {_esc(release.label)} is installed on this computer. "
-                             "Restart the app to start using it.")
+                lines.append(tr("Version {version} is installed on this computer. "
+                                "Restart the app to start using it.", version=_esc(release.label)))
         self.banner_label.setText("<br>".join(lines))
         self.update_btn.setVisible(bool(self._outdated) and not self._restart_pending)
-        self.update_btn.setText(f"Update {self._outdated[0].name}" if len(self._outdated) == 1
-                                else f"Update all ({len(self._outdated)})")
+        self.update_btn.setText(tr("Update {name}", name=self._outdated[0].name) if len(self._outdated) == 1
+                                else tr("Update all ({n})", n=len(self._outdated)))
         self.restart_btn.setVisible(self_stale and not self._restart_pending)
         self.banner.setVisible(bool(lines))
 
@@ -936,7 +984,8 @@ class MainWindow(QMainWindow):
     def _restart_self(self) -> None:
         active = self.manager.active()
         if active and QMessageBox.question(
-                self, APP_NAME, f"{plural(len(active), 'transfer')} still in progress. Stop and restart?"
+                self, APP_NAME, tr("{n} transfer still in progress. Stop and restart?",
+                                   "{n} transfers still in progress. Stop and restart?", n=len(active))
         ) != QMessageBox.StandardButton.Yes:
             return
         for t in active:
@@ -944,7 +993,7 @@ class MainWindow(QMainWindow):
         self._restart()
 
     def _restart(self) -> None:
-        """Start the newly installed version and quit this one."""
+        """Start the app again (the newly installed version, or for a new language) and quit this one."""
         self._restarting = True
         self._timer.stop()
         self.discovery.stop()  # free the ports for the new instance
@@ -952,9 +1001,8 @@ class MainWindow(QMainWindow):
         try:
             updates.launch_installed_app()
         except OSError:
-            log.exception("Could not start the new version")
-            QMessageBox.warning(self, APP_NAME, "The update is installed, but the app couldn't restart by "
-                                                "itself. Please open it again.")
+            log.exception("Could not start the app again")
+            QMessageBox.warning(self, APP_NAME, tr("The app couldn't restart by itself. Please open it again."))
         QApplication.quit()
 
     # -- shutdown ---------------------------------------------------------
@@ -966,7 +1014,8 @@ class MainWindow(QMainWindow):
         active = self.manager.active()
         if active:
             answer = QMessageBox.question(
-                self, APP_NAME, f"{plural(len(active), 'transfer')} still in progress. Stop and quit?")
+                self, APP_NAME, tr("{n} transfer still in progress. Stop and quit?",
+                                   "{n} transfers still in progress. Stop and quit?", n=len(active)))
             if answer != QMessageBox.StandardButton.Yes:
                 event.ignore()
                 return
