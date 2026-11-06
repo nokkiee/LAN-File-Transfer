@@ -67,13 +67,19 @@ class MacNameTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             base = Path(tmp)
             items = [{"kind": "file", "path": p} for p in
-                     ("Readme.md", "README.md", "caf\u00e9.txt", "cafe\u0301.txt", "a:b.txt")]
+                     ("Readme.md", "README.md", "caf\u00e9.txt", "cafe\u0301.txt")]
             dests = plan_destinations(items, base, windows=False, case_insensitive=True)
             names = [d.name for d in dests]
             self.assertEqual(names[:2], ["Readme.md", "README (1).md"])
             self.assertEqual(names[2], "caf\u00e9.txt")
             self.assertTrue(names[3].endswith(" (1).txt"))
-            self.assertEqual(names[4], "a:b.txt")  # fine on macOS, only Windows needs it changed
+
+    @unittest.skipIf(sys.platform.startswith("win"), "on Windows \"a:\" is read as a drive letter")
+    def test_colon_is_kept(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            [dest] = plan_destinations([{"kind": "file", "path": "a:b.txt"}], Path(tmp), windows=False,
+                                       case_insensitive=True)
+            self.assertEqual(dest.name, "a:b.txt")  # fine on macOS, only Windows needs it changed
 
     def test_linux_keeps_case_variants(self):
         with tempfile.TemporaryDirectory() as tmp:
