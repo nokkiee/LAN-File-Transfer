@@ -2,12 +2,14 @@ name: Build apps
 
 # Builds the Windows, Linux and macOS apps and checks that each one starts and can receive a file.
 # These are unsigned test builds: the key that signs over-Wi-Fi updates never
-# leaves the maintainer's computer, so official releases are still made there
-# with ./build_all.sh.
+# leaves the maintainer's computer, so official Windows and Linux releases are
+# still made there with ./build_all.sh. For a release tag (v1.2.0 ...) the
+# macOS app built here is the one that goes on the Releases page.
 
 on:
   push:
     branches: [main]
+    tags: ["v*"]
     paths-ignore: ["**.md", "docs/**", ".github/ISSUE_TEMPLATE/**", "LICENSE"]
   pull_request:
     paths-ignore: ["**.md", "docs/**", ".github/ISSUE_TEMPLATE/**", "LICENSE"]
@@ -57,7 +59,10 @@ jobs:
         run: python -m pip install -r requirements.txt -r requirements-build.txt
 
       - name: Mark as a test build
-        # BUILD = 0 means "not a release build" (see lanxfer/_build.py).
+        # BUILD = 0 means "not a release build" (see lanxfer/_build.py). A release
+        # tag keeps the build stamp committed with the release, so the Mac app
+        # matches the Windows and Linux apps of the same version.
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
         run: python -c "open('lanxfer/_build.py', 'w').write('# CI test build\nBUILD = 0\n')"
 
       - name: Build
