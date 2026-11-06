@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-06
+
 ### Added
 
 - **macOS version** for Apple Silicon Macs (M1 and later) on macOS 14 or newer. It works with the Windows and Linux versions in every direction. Received names are compared without regard to case, as on Windows, so `Readme.md` and `README.md` from Linux don't overwrite each other. Macs can't install updates over Wi‑Fi yet; download new versions from the Releases page.
@@ -77,7 +79,8 @@ First version. Not published on GitHub.
 - Settings: computer name, receive folder, and whether to ask before accepting.
 - Single-file apps for Windows (`.exe`) and Linux. On Linux the app adds itself to the applications menu.
 
-[Unreleased]: https://github.com/nokkiee/LAN-File-Transfer/compare/v1.1.2...HEAD
+[Unreleased]: https://github.com/nokkiee/LAN-File-Transfer/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/nokkiee/LAN-File-Transfer/releases/tag/v1.2.0
 [1.1.2]: https://github.com/nokkiee/LAN-File-Transfer/releases/tag/v1.1.2
 [1.1.1]: https://github.com/nokkiee/LAN-File-Transfer/releases/tag/v1.1.1
 [1.1.0]: https://github.com/nokkiee/LAN-File-Transfer/releases/tag/v1.1.0
