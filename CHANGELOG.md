@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-06
+
 ### Added
 
 - **Languages:** Polish, German, French and Spanish, besides English. The app follows the computer's language, or you choose one in *Settings → Language*. Plurals, decimal commas and month names follow the language, and Qt's own buttons and file dialogs are translated too. Messages sent between computers stay in English underneath, so each computer shows them in its own language.
@@ -84,7 +86,8 @@ First version. Not published on GitHub.
 - Settings: computer name, receive folder, and whether to ask before accepting.
 - Single-file apps for Windows (`.exe`) and Linux. On Linux the app adds itself to the applications menu.
 
-[Unreleased]: https://github.com/nokkiee/LAN-File-Transfer/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/nokkiee/LAN-File-Transfer/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/nokkiee/LAN-File-Transfer/releases/tag/v1.3.0
 [1.2.0]: https://github.com/nokkiee/LAN-File-Transfer/releases/tag/v1.2.0
 [1.1.2]: https://github.com/nokkiee/LAN-File-Transfer/releases/tag/v1.1.2
 [1.1.1]: https://github.com/nokkiee/LAN-File-Transfer/releases/tag/v1.1.1
