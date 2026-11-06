@@ -60,6 +60,28 @@ class PathSafetyTests(unittest.TestCase):
             self.assertEqual(names, ["Photos (1)", "Photos (1)/a.jpg", "notes (1).txt", "Readme.md", "README (1).md"])
 
 
+class MacNameTests(unittest.TestCase):
+    """macOS ignores case (and accent encoding) in names but allows ":"."""
+
+    def test_case_and_accent_variants_are_kept_apart(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            items = [{"kind": "file", "path": p} for p in
+                     ("Readme.md", "README.md", "caf\u00e9.txt", "cafe\u0301.txt", "a:b.txt")]
+            dests = plan_destinations(items, base, windows=False, case_insensitive=True)
+            names = [d.name for d in dests]
+            self.assertEqual(names[:2], ["Readme.md", "README (1).md"])
+            self.assertEqual(names[2], "caf\u00e9.txt")
+            self.assertTrue(names[3].endswith(" (1).txt"))
+            self.assertEqual(names[4], "a:b.txt")  # fine on macOS, only Windows needs it changed
+
+    def test_linux_keeps_case_variants(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            items = [{"kind": "file", "path": p} for p in ("Readme.md", "README.md")]
+            dests = plan_destinations(items, Path(tmp), windows=False, case_insensitive=False)
+            self.assertEqual([d.name for d in dests], ["Readme.md", "README.md"])
+
+
 class TransferTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()

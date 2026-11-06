@@ -1,6 +1,6 @@
 name: Build apps
 
-# Builds the Windows and Linux apps and checks that each one starts.
+# Builds the Windows, Linux and macOS apps and checks that each one starts and can receive a file.
 # These are unsigned test builds: the key that signs over-Wi-Fi updates never
 # leaves the maintainer's computer, so official releases are still made there
 # with ./build_all.sh.
@@ -31,11 +31,18 @@ jobs:
         include:
           - name: Windows
             os: windows-latest
+            exe: dist/LAN-File-Transfer-Windows.exe
             file: LAN-File-Transfer-Windows.exe
           - name: Linux
             # Built on an older Ubuntu so the app also runs on older distributions.
             os: ubuntu-22.04
+            exe: dist/LAN-File-Transfer-Linux
             file: LAN-File-Transfer-Linux
+          - name: macOS
+            # Apple Silicon. The app is a bundle, shipped as a zip.
+            os: macos-latest
+            exe: dist/LAN File Transfer.app/Contents/MacOS/LAN File Transfer
+            file: LAN-File-Transfer-macOS.zip
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -58,10 +65,10 @@ jobs:
           python tools/make_icon.py
           python -m PyInstaller --noconfirm --log-level WARN lan-file-transfer.spec
 
-      - name: Check the app starts (Linux)
-        if: runner.os == 'Linux'
+      - name: Check the app starts (Linux, macOS)
+        if: runner.os != 'Windows'
         run: |
-          ./dist/${{ matrix.file }} --self-test "$RUNNER_TEMP/selftest.json"
+          "${{ matrix.exe }}" --self-test "$RUNNER_TEMP/selftest.json"
           cat "$RUNNER_TEMP/selftest.json"
 
       - name: Check the app starts (Windows)
@@ -69,9 +76,19 @@ jobs:
         shell: pwsh
         run: |
           $report = Join-Path $env:RUNNER_TEMP 'selftest.json'
-          $p = Start-Process -FilePath 'dist\${{ matrix.file }}' -ArgumentList '--self-test', $report -Wait -PassThru
+          $p = Start-Process -FilePath '${{ matrix.exe }}' -ArgumentList '--self-test', $report -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "Self-test failed with exit code $($p.ExitCode)" }
           Get-Content $report
+
+      - name: Check the app receives a file
+        run: python tests/smoke_app.py "${{ matrix.exe }}"
+
+      - name: Package the macOS app
+        if: runner.os == 'macOS'
+        run: |
+          codesign --verify --deep --strict "dist/LAN File Transfer.app"
+          lipo -archs "${{ matrix.exe }}"
+          ditto -c -k --keepParent "dist/LAN File Transfer.app" "dist/${{ matrix.file }}"
 
       - uses: actions/upload-artifact@v7
         with:

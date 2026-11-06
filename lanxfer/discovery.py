@@ -11,7 +11,7 @@ import time
 from dataclasses import dataclass
 from typing import Callable
 
-from . import IS_LINUX, IS_WINDOWS
+from . import IS_LINUX, IS_MAC, IS_WINDOWS
 from .protocol import APP_ID, DEFAULT_TCP_PORT, DISCOVERY_PORT, PROTOCOL_VERSION, recv_frame, send_frame
 
 log = logging.getLogger(__name__)
@@ -51,23 +51,47 @@ def _primary_ip() -> str | None:
             return None
 
 
+def parse_ip_addr(text: str) -> dict[str, str]:
+    """{address: broadcast} from Linux's `ip -4 -o addr show`."""
+    found = {}
+    for ip, prefix in re.findall(r"inet (\d+\.\d+\.\d+\.\d+)/(\d+)", text):
+        found[ip] = str(ipaddress.ip_interface(f"{ip}/{prefix}").network.broadcast_address)
+    return found
+
+
+def parse_ifconfig(text: str) -> dict[str, str]:
+    """{address: broadcast} from macOS's `ifconfig` (netmask is printed in hex)."""
+    found = {}
+    pattern = r"inet (\d+\.\d+\.\d+\.\d+)(?: --> \S+)? netmask (0x[0-9a-fA-F]+)(?: broadcast (\d+\.\d+\.\d+\.\d+))?"
+    for ip, mask, bcast in re.findall(pattern, text):
+        prefix = bin(int(mask, 16)).count("1")
+        found[ip] = bcast or str(ipaddress.ip_interface(f"{ip}/{prefix}").network.broadcast_address)
+    return found
+
+
+def _command_output(cmd: list[str]) -> str:
+    try:
+        return subprocess.run(cmd, capture_output=True, text=True, timeout=2).stdout
+    except (OSError, subprocess.SubprocessError):
+        return ""
+
+
 def local_interfaces() -> list[tuple[str, str]]:
     """(local IPv4 address, its broadcast address) for every usable interface."""
     found: dict[str, str] = {}
-    if IS_LINUX:
-        try:
-            out = subprocess.run(["ip", "-4", "-o", "addr", "show"], capture_output=True,
-                                 text=True, timeout=2).stdout
-            for ip, prefix in re.findall(r"inet (\d+\.\d+\.\d+\.\d+)/(\d+)", out):
-                net = ipaddress.ip_interface(f"{ip}/{prefix}").network
-                found[ip] = str(net.broadcast_address)
-        except (OSError, subprocess.SubprocessError, ValueError):
-            pass
-    candidates = []
     try:
-        candidates += [info[4][0] for info in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET)]
-    except OSError:
+        if IS_LINUX:
+            found.update(parse_ip_addr(_command_output(["ip", "-4", "-o", "addr", "show"])))
+        elif IS_MAC:
+            found.update(parse_ifconfig(_command_output(["/sbin/ifconfig"])))
+    except ValueError:
         pass
+    candidates = []
+    if not IS_MAC:  # on macOS this lookup can hang for seconds on mDNS, and ifconfig already listed everything
+        try:
+            candidates += [info[4][0] for info in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET)]
+        except OSError:
+            pass
     primary = _primary_ip()
     if primary:
         candidates.insert(0, primary)

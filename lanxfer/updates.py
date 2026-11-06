@@ -26,7 +26,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
 
-from . import IS_WINDOWS, VERSION, os_label, update_key
+from . import IS_MAC, IS_WINDOWS, VERSION, os_label, update_key
 from ._build import BUILD
 from .protocol import APP_ID, PROTOCOL_VERSION, ProtocolError, RemoteCancelled, recv_frame, remote_stop, send_frame
 from .transfer import (
@@ -84,7 +84,13 @@ def executable() -> Path:
 
 
 def can_install() -> bool:
-    """Only the packaged app, in a folder it may write to, can replace itself."""
+    """Only the packaged app, in a folder it may write to, can replace itself.
+
+    Not on macOS yet: the app there is a .app bundle (a whole folder), and
+    install() only knows how to swap a single file.
+    """
+    if IS_MAC:
+        return False
     return bool(update_key.PUBLIC_KEY) and is_packaged() and os.access(executable().parent, os.W_OK)
 
 

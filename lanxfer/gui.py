@@ -882,8 +882,7 @@ class MainWindow(QMainWindow):
         def is_stuck(p: Peer) -> bool:  # older, but can't take an update over Wi-Fi
             if not p.version:
                 return True  # an app from before automatic updates existed
-            return (not p.updatable and p.target in release.builds
-                    and release.key > updates.version_key(p.version, p.build))
+            return not p.updatable and release.key > updates.version_key(p.version, p.build)
 
         stuck = [p for p in peers if is_stuck(p)] if release else []
         target = self.updates.target
@@ -901,8 +900,8 @@ class MainWindow(QMainWindow):
             if self._outdated:
                 lines.append(f"Version {_esc(release.label)} is ready for {names(self._outdated)}.")
             if stuck:
-                lines.append(f"{names(stuck)} can't update automatically (it has an older version or isn't the "
-                             "packaged app). Copy the new app there by hand once.")
+                lines.append(f"{names(stuck)} can't update automatically (an older or Mac version, or not the "
+                             "packaged app). Download the new version there from the Releases page.")
             if self_stale:
                 lines.append(f"Version {_esc(release.label)} is installed on this computer. "
                              "Restart the app to start using it.")

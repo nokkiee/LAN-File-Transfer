@@ -1,15 +1,17 @@
 """Turn file names received from the other computer into safe local paths.
 
 Names that are fine on Linux can be illegal on Windows (``a:b.txt``, ``CON``,
-trailing dots, names differing only by case), and a malicious sender could try
-``../../something``. Everything received goes through plan_destinations().
+trailing dots), Windows and macOS treat names that differ only by case as the
+same file, and a malicious sender could try ``../../something``. Everything
+received goes through plan_destinations().
 """
 
 import os
 import re
+import unicodedata
 from pathlib import Path
 
-from . import IS_WINDOWS
+from . import IS_MAC, IS_WINDOWS
 
 _WINDOWS_RESERVED = {"CON", "PRN", "AUX", "NUL"} | {f"COM{i}" for i in range(1, 10)} | {
     f"LPT{i}" for i in range(1, 10)
@@ -57,20 +59,24 @@ def _numbered(name: str, n: int, is_dir: bool) -> str:
 
 
 def plan_destinations(items: list[dict], base: Path, windows: bool = IS_WINDOWS,
-                      reserved: set[str] | None = None) -> list[Path]:
+                      reserved: set[str] | None = None, case_insensitive: bool | None = None) -> list[Path]:
     """Map every offered item to a destination path inside ``base``.
 
-    Top-level names that already exist get " (1)", " (2)"... appended, and on
-    Windows names that only differ by case are kept apart the same way.
-    ``reserved`` holds casefolded paths claimed by transfers still in progress.
+    Top-level names that already exist get " (1)", " (2)"... appended. Where the
+    file system ignores case (Windows and macOS by default), names that differ
+    only by case, or by how an accented letter is encoded, are kept apart the
+    same way. ``windows`` controls which characters are cleaned. ``reserved``
+    holds casefolded paths claimed by transfers still in progress.
     """
+    if case_insensitive is None:
+        case_insensitive = windows or IS_MAC
     base = Path(os.path.abspath(base))
     reserved = reserved if reserved is not None else set()
     dir_map: dict[str, Path] = {"": base}
     taken: dict[Path, set[str]] = {}
 
     def key(name: str) -> str:
-        return name.casefold() if windows else name
+        return unicodedata.normalize("NFC", name).casefold() if case_insensitive else name
 
     def claim(parent: Path, name: str, is_dir: bool) -> Path:
         used = taken.setdefault(parent, set())

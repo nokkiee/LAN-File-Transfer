@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
         # 3.10: oldest supported. 3.13: used for the Windows build. 3.14: used for the Linux build.
         python: ["3.10", "3.13", "3.14"]
     steps:

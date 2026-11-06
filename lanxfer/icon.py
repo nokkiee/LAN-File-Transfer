@@ -70,3 +70,17 @@ def ico_bytes(sizes=(16, 24, 32, 48, 64, 128, 256)) -> bytes:
         entries += struct.pack("<BBBBHHII", dim, dim, 0, 0, 1, 32, len(data), offset)
         offset += len(data)
     return header + entries + b"".join(images)
+
+
+# macOS .icns entry types and the pixel size each one holds (types ending in
+# 11-14 and ic10 are the @2x "Retina" versions of the smaller sizes).
+_ICNS_TYPES = (("icp4", 16), ("icp5", 32), ("ic11", 32), ("ic12", 64), ("ic07", 128), ("ic13", 256),
+               ("ic08", 256), ("ic14", 512), ("ic09", 512), ("ic10", 1024))
+
+
+def icns_bytes() -> bytes:
+    """A macOS .icns file (PNG-compressed entries)."""
+    pngs = {size: png_bytes(size) for size in {size for _, size in _ICNS_TYPES}}
+    body = b"".join(kind.encode("ascii") + struct.pack(">I", 8 + len(pngs[size])) + pngs[size]
+                    for kind, size in _ICNS_TYPES)
+    return b"icns" + struct.pack(">I", 8 + len(body)) + body

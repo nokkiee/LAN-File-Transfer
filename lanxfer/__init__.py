@@ -13,6 +13,7 @@ VERSION = "1.1.2"
 
 IS_WINDOWS = sys.platform.startswith("win")
 IS_LINUX = sys.platform.startswith("linux")
+IS_MAC = sys.platform == "darwin"
 
 
 def os_label() -> str:
@@ -20,6 +21,6 @@ def os_label() -> str:
         return "Windows"
     if IS_LINUX:
         return "Linux"
-    if sys.platform == "darwin":
+    if IS_MAC:
         return "macOS"
     return platform.system() or "Unknown"

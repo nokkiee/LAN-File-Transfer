@@ -8,7 +8,7 @@ import uuid
 from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 
-from . import APP_NAME, APP_SLUG, IS_WINDOWS
+from . import APP_NAME, APP_SLUG, IS_MAC, IS_WINDOWS
 from .protocol import DEFAULT_TCP_PORT
 
 log = logging.getLogger(__name__)
@@ -20,6 +20,8 @@ def config_dir() -> Path:
         path = Path(override)
     elif IS_WINDOWS:
         path = Path(os.environ.get("APPDATA") or Path.home() / "AppData" / "Roaming") / APP_NAME
+    elif IS_MAC:
+        path = Path.home() / "Library" / "Application Support" / APP_NAME
     else:
         path = Path(os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config") / APP_SLUG
     path.mkdir(parents=True, exist_ok=True)
