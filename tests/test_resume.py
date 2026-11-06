@@ -111,7 +111,9 @@ class Relay:
                                 keep = True
                                 self.held.append(upstream)  # never closed: the receiver hears nothing
                             else:
-                                reset(upstream)
+                                # An ordinary close: macOS rate-limits resets, and a dropped one
+                                # would leave the receiver waiting for its 60-second timeout.
+                                upstream.close()
                             return
                     data = src.recv(limit)
                     if not data:
