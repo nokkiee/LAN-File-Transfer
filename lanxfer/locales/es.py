@@ -229,4 +229,35 @@ MESSAGES = {
     "{h} h {m:02d} min": "{h} h {m:02d} min",
     "Jan": "ene", "Feb": "feb", "Mar": "mar", "Apr": "abr", "May": "may", "Jun": "jun",
     "Jul": "jul", "Aug": "ago", "Sep": "sept", "Oct": "oct", "Nov": "nov", "Dec": "dic",
+    # Resuming interrupted transfers
+    "Resume": "Reanudar",
+    "Discard": "Descartar",
+    "Interrupted": "Interrumpido",
+    "Resuming": "Reanudando",
+    "It continues by itself when {name} is back online, or click Resume.":
+        "Continuará sola cuando {name} vuelva a estar en línea, o haz clic en Reanudar.",
+    "It continues when {name} sends the rest.": "Continuará cuando {name} envíe el resto.",
+    "Checking the part that was already sent": "Comprobando la parte ya enviada",
+    "Checking the part that already arrived": "Comprobando la parte que ya llegó",
+    "The transfer was interrupted.": "La transferencia se interrumpió.",
+    "The other computer closed the app.": "Se cerró la aplicación en el otro equipo.",
+    "This app was closed during the transfer.": "La aplicación se cerró durante la transferencia.",
+    "The other computer stopped this transfer for good.": "El otro equipo detuvo esta transferencia definitivamente.",
+    "The sender stopped this transfer for good.": "El remitente detuvo esta transferencia definitivamente.",
+    "The other computer could not read the files: {error}": "El otro equipo no pudo leer los archivos: {error}",
+    "Stop this transfer for good? The files that already arrived on {name} stay there.":
+        "¿Detener esta transferencia definitivamente? Los archivos que ya llegaron a {name} se quedan allí.",
+    "Stop this transfer for good? The files that already arrived stay in the folder; the unfinished one is deleted.":
+        "¿Detener esta transferencia definitivamente? Los archivos que ya llegaron se quedan en la carpeta; el "
+        "que quedó a medias se elimina.",
+    "{n} transfer still in progress. Restart anyway?\n\nIt continues where it stopped after the restart.": (
+        "{n} transferencia sigue en curso. ¿Reiniciar de todos modos?\n\nContinuará donde se quedó después "
+        "del reinicio.",
+        "{n} transferencias siguen en curso. ¿Reiniciar de todos modos?\n\nContinuarán donde se quedaron "
+        "después del reinicio."),
+    "{n} transfer still in progress. Quit anyway?\n\nIt continues where it stopped the next time both computers have the app open.": (
+        "{n} transferencia sigue en curso. ¿Salir de todos modos?\n\nContinuará donde se quedó la próxima "
+        "vez que la aplicación esté abierta en los dos equipos.",
+        "{n} transferencias siguen en curso. ¿Salir de todos modos?\n\nContinuarán donde se quedaron la "
+        "próxima vez que la aplicación esté abierta en los dos equipos."),
 }

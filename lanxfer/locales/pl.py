@@ -232,4 +232,39 @@ MESSAGES = {
     "{h} h {m:02d} min": "{h} godz. {m:02d} min",
     "Jan": "sty", "Feb": "lut", "Mar": "mar", "Apr": "kwi", "May": "maj", "Jun": "cze",
     "Jul": "lip", "Aug": "sie", "Sep": "wrz", "Oct": "paź", "Nov": "lis", "Dec": "gru",
+    # Resuming interrupted transfers
+    "Resume": "Wznów",
+    "Discard": "Odrzuć",
+    "Interrupted": "Przerwano",
+    "Resuming": "Wznawianie",
+    "It continues by itself when {name} is back online, or click Resume.":
+        "Wznowi się samo, gdy {name} znowu będzie online. Możesz też kliknąć Wznów.",
+    "It continues when {name} sends the rest.": "Będzie kontynuowane, gdy {name} wyśle resztę.",
+    "Checking the part that was already sent": "Sprawdzanie już wysłanej części",
+    "Checking the part that already arrived": "Sprawdzanie części, która już dotarła",
+    "The transfer was interrupted.": "Przesyłanie zostało przerwane.",
+    "The other computer closed the app.": "Na drugim komputerze zamknięto aplikację.",
+    "This app was closed during the transfer.": "Aplikacja została zamknięta w trakcie przesyłania.",
+    "The other computer stopped this transfer for good.": "Drugi komputer zakończył to przesyłanie na stałe.",
+    "The sender stopped this transfer for good.": "Nadawca zakończył to przesyłanie na stałe.",
+    "The other computer could not read the files: {error}": "Drugi komputer nie mógł odczytać plików: {error}",
+    "Stop this transfer for good? The files that already arrived on {name} stay there.":
+        "Zakończyć to przesyłanie na stałe? Pliki, które już dotarły do {name}, zostaną tam.",
+    "Stop this transfer for good? The files that already arrived stay in the folder; the unfinished one is deleted.":
+        "Zakończyć to przesyłanie na stałe? Pliki, które już dotarły, zostaną w folderze, a niedokończony plik "
+        "zostanie usunięty.",
+    "{n} transfer still in progress. Restart anyway?\n\nIt continues where it stopped after the restart.": (
+        "{n} przesyłanie wciąż trwa. Uruchomić ponownie mimo to?\n\nPo ponownym uruchomieniu będzie "
+        "kontynuowane od miejsca przerwania.",
+        "{n} przesyłania wciąż trwają. Uruchomić ponownie mimo to?\n\nPo ponownym uruchomieniu będą "
+        "kontynuowane od miejsca przerwania.",
+        "{n} przesyłań wciąż trwa. Uruchomić ponownie mimo to?\n\nPo ponownym uruchomieniu będą "
+        "kontynuowane od miejsca przerwania."),
+    "{n} transfer still in progress. Quit anyway?\n\nIt continues where it stopped the next time both computers have the app open.": (
+        "{n} przesyłanie wciąż trwa. Zamknąć mimo to?\n\nBędzie kontynuowane od miejsca przerwania, gdy "
+        "aplikacja będzie znowu otwarta na obu komputerach.",
+        "{n} przesyłania wciąż trwają. Zamknąć mimo to?\n\nBędą kontynuowane od miejsca przerwania, gdy "
+        "aplikacja będzie znowu otwarta na obu komputerach.",
+        "{n} przesyłań wciąż trwa. Zamknąć mimo to?\n\nBędą kontynuowane od miejsca przerwania, gdy "
+        "aplikacja będzie znowu otwarta na obu komputerach."),
 }

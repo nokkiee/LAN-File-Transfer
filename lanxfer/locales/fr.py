@@ -231,4 +231,35 @@ MESSAGES = {
     "{h} h {m:02d} min": "{h} h {m:02d} min",
     "Jan": "janv.", "Feb": "févr.", "Mar": "mars", "Apr": "avr.", "May": "mai", "Jun": "juin",
     "Jul": "juil.", "Aug": "août", "Sep": "sept.", "Oct": "oct.", "Nov": "nov.", "Dec": "déc.",
+    # Resuming interrupted transfers
+    "Resume": "Reprendre",
+    "Discard": "Abandonner",
+    "Interrupted": "Interrompu",
+    "Resuming": "Reprise",
+    "It continues by itself when {name} is back online, or click Resume.":
+        "Il reprendra tout seul dès que {name} sera de nouveau en ligne, ou cliquez sur Reprendre.",
+    "It continues when {name} sends the rest.": "Il reprendra quand {name} enverra le reste.",
+    "Checking the part that was already sent": "Vérification de la partie déjà envoyée",
+    "Checking the part that already arrived": "Vérification de la partie déjà reçue",
+    "The transfer was interrupted.": "Le transfert a été interrompu.",
+    "The other computer closed the app.": "L’application a été fermée sur l’autre ordinateur.",
+    "This app was closed during the transfer.": "L’application a été fermée pendant le transfert.",
+    "The other computer stopped this transfer for good.": "L’autre ordinateur a arrêté définitivement ce transfert.",
+    "The sender stopped this transfer for good.": "L’expéditeur a arrêté définitivement ce transfert.",
+    "The other computer could not read the files: {error}": "L’autre ordinateur n’a pas pu lire les fichiers : {error}",
+    "Stop this transfer for good? The files that already arrived on {name} stay there.":
+        "Arrêter définitivement ce transfert ? Les fichiers déjà arrivés sur {name} y restent.",
+    "Stop this transfer for good? The files that already arrived stay in the folder; the unfinished one is deleted.":
+        "Arrêter définitivement ce transfert ? Les fichiers déjà arrivés restent dans le dossier ; le fichier "
+        "inachevé est supprimé.",
+    "{n} transfer still in progress. Restart anyway?\n\nIt continues where it stopped after the restart.": (
+        "{n} transfert encore en cours. Redémarrer quand même ?\n\nIl reprendra là où il s’est arrêté "
+        "après le redémarrage.",
+        "{n} transferts encore en cours. Redémarrer quand même ?\n\nIls reprendront là où ils se sont "
+        "arrêtés après le redémarrage."),
+    "{n} transfer still in progress. Quit anyway?\n\nIt continues where it stopped the next time both computers have the app open.": (
+        "{n} transfert encore en cours. Quitter quand même ?\n\nIl reprendra là où il s’est arrêté la "
+        "prochaine fois que l’application sera ouverte sur les deux ordinateurs.",
+        "{n} transferts encore en cours. Quitter quand même ?\n\nIls reprendront là où ils se sont arrêtés "
+        "la prochaine fois que l’application sera ouverte sur les deux ordinateurs."),
 }

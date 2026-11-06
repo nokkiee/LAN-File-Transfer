@@ -228,4 +228,35 @@ MESSAGES = {
     "{h} h {m:02d} min": "{h} Std. {m:02d} Min.",
     "Jan": "Jan", "Feb": "Feb", "Mar": "März", "Apr": "Apr", "May": "Mai", "Jun": "Juni",
     "Jul": "Juli", "Aug": "Aug", "Sep": "Sept", "Oct": "Okt", "Nov": "Nov", "Dec": "Dez",
+    # Resuming interrupted transfers
+    "Resume": "Fortsetzen",
+    "Discard": "Verwerfen",
+    "Interrupted": "Unterbrochen",
+    "Resuming": "Setze fort",
+    "It continues by itself when {name} is back online, or click Resume.":
+        "Sie geht von selbst weiter, sobald {name} wieder online ist, oder klicke auf Fortsetzen.",
+    "It continues when {name} sends the rest.": "Sie geht weiter, sobald {name} den Rest sendet.",
+    "Checking the part that was already sent": "Prüfe den bereits gesendeten Teil",
+    "Checking the part that already arrived": "Prüfe den bereits angekommenen Teil",
+    "The transfer was interrupted.": "Die Übertragung wurde unterbrochen.",
+    "The other computer closed the app.": "Auf dem anderen Computer wurde die App geschlossen.",
+    "This app was closed during the transfer.": "Die App wurde während der Übertragung geschlossen.",
+    "The other computer stopped this transfer for good.": "Der andere Computer hat diese Übertragung endgültig beendet.",
+    "The sender stopped this transfer for good.": "Der Absender hat diese Übertragung endgültig beendet.",
+    "The other computer could not read the files: {error}": "Der andere Computer konnte die Dateien nicht lesen: {error}",
+    "Stop this transfer for good? The files that already arrived on {name} stay there.":
+        "Diese Übertragung endgültig beenden? Die Dateien, die schon auf {name} angekommen sind, bleiben dort.",
+    "Stop this transfer for good? The files that already arrived stay in the folder; the unfinished one is deleted.":
+        "Diese Übertragung endgültig beenden? Die Dateien, die schon angekommen sind, bleiben im Ordner; die "
+        "unvollständige wird gelöscht.",
+    "{n} transfer still in progress. Restart anyway?\n\nIt continues where it stopped after the restart.": (
+        "{n} Übertragung läuft noch. Trotzdem neu starten?\n\nSie wird nach dem Neustart dort fortgesetzt, "
+        "wo sie aufgehört hat.",
+        "{n} Übertragungen laufen noch. Trotzdem neu starten?\n\nSie werden nach dem Neustart dort "
+        "fortgesetzt, wo sie aufgehört haben."),
+    "{n} transfer still in progress. Quit anyway?\n\nIt continues where it stopped the next time both computers have the app open.": (
+        "{n} Übertragung läuft noch. Trotzdem beenden?\n\nSie wird dort fortgesetzt, wo sie aufgehört hat, "
+        "sobald die App auf beiden Computern wieder geöffnet ist.",
+        "{n} Übertragungen laufen noch. Trotzdem beenden?\n\nSie werden dort fortgesetzt, wo sie aufgehört "
+        "haben, sobald die App auf beiden Computern wieder geöffnet ist."),
 }

@@ -20,10 +20,10 @@ from . import APP_NAME, VERSION, os_label, updates
 from .discovery import Discovery, Peer, parse_address
 from .i18n import AUTO, LANGUAGES, decimal, tr, tr_msg
 from .icon import app_icon
-from .settings import Settings
+from .settings import Settings, config_dir
 from .theme import THEMES, ThemeManager
 from .transfer import (
-    ACTIVE, CANCELLED, DECLINED, DONE, FAILED, PREPARING, WAITING, Offer, Transfer, TransferManager,
+    ACTIVE, CANCELLED, DECLINED, DONE, FAILED, INTERRUPTED, PREPARING, WAITING, Offer, Transfer, TransferManager,
 )
 from .updates import UpdateOffer, UpdateService
 
@@ -106,12 +106,13 @@ class DropListWidget(HintListWidget):
 
 
 class TransferRow(QFrame):
-    def __init__(self, transfer: Transfer, on_remove, parent=None):
+    def __init__(self, transfer: Transfer, on_remove, on_resume=None, on_discard=None, parent=None):
         super().__init__(parent)
         self.transfer = transfer
         self.on_remove = on_remove
         self._samples: collections.deque = collections.deque()
-        self._final_rendered = False
+        self._rendered = None  # (attempt, state) of the finished transfer already on screen
+        self._attempt = transfer.attempt
         self.setFrameShape(QFrame.Shape.StyledPanel)
 
         self.title = QLabel()
@@ -134,6 +135,12 @@ class TransferRow(QFrame):
         self.open_btn = QPushButton(tr("Open folder"))
         self.open_btn.clicked.connect(lambda: open_folder(transfer.save_dir))
         self.open_btn.hide()
+        self.resume_btn = QPushButton(tr("Resume"))
+        self.resume_btn.clicked.connect(lambda: on_resume and on_resume(self))
+        self.resume_btn.hide()
+        self.discard_btn = QPushButton(tr("Discard"))
+        self.discard_btn.clicked.connect(lambda: on_discard and on_discard(self))
+        self.discard_btn.hide()
         self.remove_btn = QToolButton()
         self.remove_btn.setText("✕")
         self.remove_btn.setToolTip(tr("Remove from list"))
@@ -147,7 +154,9 @@ class TransferRow(QFrame):
         bottom = QHBoxLayout()
         bottom.addWidget(self.detail, 1)
         bottom.addWidget(self.cancel_btn)
+        bottom.addWidget(self.resume_btn)
         bottom.addWidget(self.open_btn)
+        bottom.addWidget(self.discard_btn)
         bottom.addWidget(self.remove_btn)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(10, 8, 10, 8)
@@ -191,10 +200,20 @@ class TransferRow(QFrame):
 
     def refresh(self) -> None:
         t = self.transfer
-        if self._final_rendered:
+        if t.attempt != self._attempt:  # resumed: carry on in the same row
+            self._attempt = t.attempt
+            self._samples.clear()
+        if t.is_finished and self._rendered == (t.attempt, t.state):
             return
         self.title.setText(("↑  " if t.direction == "send" else "↓  ") + self._title(t))
         fraction = t.done_bytes / t.total_bytes if t.total_bytes else (1.0 if t.state == DONE else 0.0)
+        finished, interrupted = t.is_finished, t.state == INTERRUPTED
+        self.cancel_btn.setVisible(not finished)
+        self.resume_btn.setVisible(interrupted and t.direction == "send")
+        self.discard_btn.setVisible(interrupted)
+        self.remove_btn.setVisible(finished and not interrupted)
+        self.open_btn.setVisible(finished and t.direction == "receive" and t.kind == "files"
+                                 and (t.state == DONE or t.files_done > 0))
 
         if t.state in (WAITING, PREPARING):
             self.bar.setRange(0, 0)  # busy animation
@@ -215,26 +234,27 @@ class TransferRow(QFrame):
             self.detail.setText(tr_msg(t.message) or " · ".join(parts))
             self.detail.setToolTip(t.current_file)
         else:
-            self._final_rendered = True
+            self._rendered = (t.attempt, t.state)
             self.bar.setRange(0, 1000)
             self.bar.setValue(1000 if t.state == DONE else int(fraction * 1000))
-            self.cancel_btn.hide()
-            self.remove_btn.show()
             if t.state == DONE:
-                elapsed = (t.finished or time.monotonic()) - t.started
                 self.status.setText("✓ " + tr("Done"))
-                summary = tr("{size} in {time}", size=human_size(t.done_bytes), time=human_duration(elapsed))
+                summary = tr("{size} in {time}", size=human_size(t.done_bytes), time=human_duration(t.elapsed()))
                 if t.kind != "update":
                     summary = f"{files_text(t.files_done)}, {summary}"
                 self.detail.setText(f"{summary}. {tr_msg(t.message)}")
-                if t.direction == "receive" and t.kind == "files":
-                    self.open_btn.show()
+            elif interrupted:
+                self.status.setText("⏸ " + tr("Interrupted"))
+                hint = (tr("It continues by itself when {name} is back online, or click Resume.", name=t.peer_name)
+                        if t.direction == "send" else tr("It continues when {name} sends the rest.", name=t.peer_name))
+                progress = [tr("{done} of {total}", done=human_size(t.done_bytes), total=human_size(t.total_bytes))]
+                if t.file_count > 1:
+                    progress.insert(0, tr("{done} of {total}", done=t.files_done, total=files_text(t.file_count)))
+                self.detail.setText(f"{tr_msg(t.message)} {hint}\n" + " · ".join(progress))
             else:
                 self.status.setText({FAILED: "✗ " + tr("Failed"), CANCELLED: tr("Cancelled"),
                                      DECLINED: tr("Declined")}[t.state])
                 self.detail.setText(tr_msg(t.message))
-                if t.direction == "receive" and t.kind == "files" and t.files_done:
-                    self.open_btn.show()
 
 
 # ---------------------------------------------------------------------------
@@ -440,7 +460,8 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.settings = settings
         self.themes = themes
-        self.manager = TransferManager(self.identity, lambda: self.settings.download_dir, self._present_offer)
+        self.manager = TransferManager(self.identity, lambda: self.settings.download_dir, self._present_offer,
+                                       store_dir=config_dir() / "transfers")
         self.updates = UpdateService(self.manager, self.updateOfferArrived.emit, self.updateInstalled.emit,
                                      auto_install=lambda: self.settings.auto_install_updates)
         self.discovery = Discovery(self.identity)
@@ -686,6 +707,8 @@ class MainWindow(QMainWindow):
                       "Open {app} on the other computer and make sure both are on the same Wi-Fi.\n\n"
                       "If a firewall question pops up, click Allow.", app=APP_NAME)
         self.device_list.set_hint(hint)
+        if not self._restart_pending:  # continue interrupted sends to computers that are back
+            self.manager.resume_waiting({p.id: (p.ip, p.port) for p in peers})
         self._refresh_banner(peers)
         outdated_ids = {p.id for p in self._outdated}
         view = [v + (p.id in outdated_ids,) for v, p in zip(view, peers)]
@@ -713,7 +736,7 @@ class MainWindow(QMainWindow):
         for t in transfers:
             row = self._rows.get(t.id)
             if row is None:
-                row = TransferRow(t, self._remove_row)
+                row = TransferRow(t, self._remove_row, self._resume_row, self._discard_row)
                 self._rows[t.id] = row
                 self.rows_layout.insertWidget(0, row)
                 self.no_transfers.hide()
@@ -726,6 +749,29 @@ class MainWindow(QMainWindow):
         row.deleteLater()
         if not self._rows:
             self.no_transfers.show()
+
+    def _peer_address(self, transfer: Transfer) -> tuple[str | None, int | None]:
+        """Where the other computer of a transfer is now, if it's online (its IP may have changed)."""
+        peer = next((p for p in self.discovery.peers() if transfer.peer_id and p.id == transfer.peer_id), None)
+        return (peer.ip, peer.port) if peer else (None, None)
+
+    def _resume_row(self, row: TransferRow) -> None:
+        if self.manager.resume(row.transfer, *self._peer_address(row.transfer)):
+            row.refresh()
+
+    def _discard_row(self, row: TransferRow) -> None:
+        t = row.transfer
+        if t.direction == "send":
+            question = tr("Stop this transfer for good? The files that already arrived on {name} stay there.",
+                          name=t.peer_name)
+        else:
+            question = tr("Stop this transfer for good? The files that already arrived stay in the folder; "
+                          "the unfinished one is deleted.")
+        if QMessageBox.question(self, APP_NAME, question) != QMessageBox.StandardButton.Yes:
+            return
+        self.manager.discard(t, *self._peer_address(t))
+        if t.state != INTERRUPTED:
+            self._remove_row(row)
 
     # -- devices ----------------------------------------------------------
 
@@ -852,7 +898,7 @@ class MainWindow(QMainWindow):
         paths = self._paths()
         if not peer or not paths:
             return
-        self.manager.send(peer.name, peer.ip, peer.port, paths)
+        self.manager.send(peer.name, peer.ip, peer.port, paths, peer_id=peer.id)
         self.file_list.clear()
         self._refresh_transfers()
 
@@ -983,13 +1029,16 @@ class MainWindow(QMainWindow):
 
     def _restart_self(self) -> None:
         active = self.manager.active()
-        if active and QMessageBox.question(
-                self, APP_NAME, tr("{n} transfer still in progress. Stop and restart?",
-                                   "{n} transfers still in progress. Stop and restart?", n=len(active))
-        ) != QMessageBox.StandardButton.Yes:
+        if all(t.resumable for t in active):
+            question = tr("{n} transfer still in progress. Restart anyway?\n\nIt continues where it stopped "
+                          "after the restart.", "{n} transfers still in progress. Restart anyway?\n\nThey "
+                          "continue where they stopped after the restart.", n=len(active))
+        else:
+            question = tr("{n} transfer still in progress. Stop and restart?",
+                          "{n} transfers still in progress. Stop and restart?", n=len(active))
+        if active and QMessageBox.question(self, APP_NAME, question) != QMessageBox.StandardButton.Yes:
             return
-        for t in active:
-            t.cancel()
+        self.manager.interrupt(active)
         self._restart()
 
     def _restart(self) -> None:
@@ -1013,14 +1062,18 @@ class MainWindow(QMainWindow):
             return
         active = self.manager.active()
         if active:
-            answer = QMessageBox.question(
-                self, APP_NAME, tr("{n} transfer still in progress. Stop and quit?",
-                                   "{n} transfers still in progress. Stop and quit?", n=len(active)))
-            if answer != QMessageBox.StandardButton.Yes:
+            if all(t.resumable for t in active):
+                question = tr("{n} transfer still in progress. Quit anyway?\n\nIt continues where it stopped "
+                              "the next time both computers have the app open.",
+                              "{n} transfers still in progress. Quit anyway?\n\nThey continue where they "
+                              "stopped the next time both computers have the app open.", n=len(active))
+            else:
+                question = tr("{n} transfer still in progress. Stop and quit?",
+                              "{n} transfers still in progress. Stop and quit?", n=len(active))
+            if QMessageBox.question(self, APP_NAME, question) != QMessageBox.StandardButton.Yes:
                 event.ignore()
                 return
-            for t in active:
-                t.cancel()
+            self.manager.interrupt(active)
             deadline = time.monotonic() + 2
             while self.manager.active() and time.monotonic() < deadline:
                 QApplication.processEvents()

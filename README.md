@@ -63,6 +63,28 @@ SHA‑256 checksum, and if a name already exists the new copy gets a number
 If the other computer doesn't appear, use **Add computer by IP address…** and
 type the IP shown at the top of the app on the other computer.
 
+## If the connection breaks
+
+If the Wi‑Fi drops, a computer goes to sleep, or the app is closed in the
+middle of a transfer, the transfer shows **⏸ Interrupted** instead of failing.
+Both computers remember it, even after they restart.
+
+- Files that arrived in full stay in the transfer's folder, ready to use. The
+  file that was cut off is kept as `name.part`.
+- When the two computers see each other again, the sender continues by itself.
+  It skips the files that already arrived and sends the rest of the cut-off
+  file from where it stopped. Both sides first check that the part already
+  there matches, and if the file changed in the meantime it's sent again in
+  full. Nobody is asked to accept again, and everything ends up in the same
+  numbered folder.
+- Click **Resume** on the sending computer to try straight away. **Discard**
+  stops the transfer for good: the files that arrived stay, and the unfinished
+  `.part` file is deleted.
+
+Interrupted transfers are kept for 30 days. Both computers need a version newer
+than 1.3.0; with an older copy on either side, a broken transfer has to be sent
+again.
+
 ## Updating your other computers over Wi‑Fi
 
 New versions are built on this Linux computer and sent to the others from

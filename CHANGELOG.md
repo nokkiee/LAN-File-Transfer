@@ -5,6 +5,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- **Interrupted transfers continue where they stopped.** If the connection breaks, a computer goes to sleep, or the app is closed during a transfer, it shows *Interrupted* instead of failing. When both computers see each other again, the sender continues by itself. Files that already arrived are skipped, and a file that was cut off continues from where it stopped, after both sides check that the part already there still matches. The rest goes into the same numbered folder without asking again. Interrupted transfers are remembered across restarts for 30 days. **Resume** tries straight away and **Discard** stops one for good, keeping the files that arrived. This works between computers that both have this version or newer.
+
+### Changed
+
+- Closing or restarting the app during a file transfer now pauses the transfer instead of cancelling it.
+
 ## [1.3.0] - 2026-11-06
 
 ### Added

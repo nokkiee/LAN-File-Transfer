@@ -31,7 +31,7 @@ from ._build import BUILD
 from .i18n import Msg, tr
 from .protocol import APP_ID, PROTOCOL_VERSION, ProtocolError, RemoteCancelled, recv_frame, remote_stop, send_frame
 from .transfer import (
-    ACTIVE, CANCELLED, DECLINED, DONE, FAILED, IO_TIMEOUT, Cancelled, Outgoing, Transfer, TransferManager,
+    CANCELLED, DECLINED, DONE, FAILED, IO_TIMEOUT, Cancelled, Outgoing, Transfer, TransferManager,
     abort_politely, describe_error, finish_from_remote, recv_file_data, wait_for_answer,
 )
 
@@ -442,9 +442,7 @@ class UpdateService:
                                   if answered else Msg("Nobody answered on the other computer.")})
                 return
             send_frame(conn, {"type": "accept"})
-            transfer.state = ACTIVE
-            transfer.message = ""
-            transfer.started = time.monotonic()
+            transfer._activate()
             conn.settimeout(IO_TIMEOUT)
             header = recv_frame(conn)
             if header.get("type") == "cancel":
