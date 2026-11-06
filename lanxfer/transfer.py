@@ -193,8 +193,9 @@ def describe_error(exc: BaseException) -> str:
 
 _NETWORK_ERRNOS = {getattr(errno, name) for name in (
     "ENETDOWN", "ENETUNREACH", "ENETRESET", "EHOSTDOWN", "EHOSTUNREACH", "ETIMEDOUT", "ECONNABORTED",
-    "ECONNRESET", "EPIPE", "WSAENETDOWN", "WSAENETUNREACH", "WSAENETRESET", "WSAEHOSTDOWN",
-    "WSAEHOSTUNREACH", "WSAETIMEDOUT", "WSAECONNABORTED", "WSAECONNRESET") if hasattr(errno, name)}
+    "ECONNRESET", "EPIPE", "ESHUTDOWN", "WSAENETDOWN", "WSAENETUNREACH", "WSAENETRESET", "WSAEHOSTDOWN",
+    "WSAEHOSTUNREACH", "WSAETIMEDOUT", "WSAECONNABORTED", "WSAECONNRESET", "WSAESHUTDOWN")
+    if hasattr(errno, name)}
 
 
 def connection_problem(exc: BaseException) -> bool:
@@ -496,6 +497,9 @@ class Receiver:
         """The sender is back for a transfer we accepted before: continue without asking."""
         if not self._take_over(record.session):
             return  # the old connection didn't let go in time; the sender tries again shortly
+        record = self.store.get("receive", record.session)
+        if record is None or record.state != OPEN:
+            return  # it ended while the old connection let go; the sender's next try gets the answer
         folder = Path(record.folder)
         destinations = record.paths()
         done, partial = what_arrived(items, destinations)
@@ -566,7 +570,9 @@ class Receiver:
             if transfer.state == DONE:
                 return  # only our final "done" didn't get through; the sender will ask again
             log.warning("Receive from %s failed: %s", transfer.peer_ip, exc)
-            if record is not None and connection_problem(exc):
+            # pausing: the app is closing, or the sender came back on a new connection and this one was
+            # shut down under us (Windows reports that as its own error, not as a lost connection).
+            if record is not None and (connection_problem(exc) or transfer.pausing):
                 transfer._finish(INTERRUPTED, describe_error(exc))
             else:
                 stop_for_good(FAILED, describe_error(exc))
@@ -575,6 +581,8 @@ class Receiver:
                                              error=describe_error(exc)), failed=True)
         except Exception as exc:  # a bug: end it for good, rather than have the sender retry forever
             log.exception("Receiving from %s failed", transfer.peer_ip)
+            if transfer.state == DONE:
+                return
             stop_for_good(FAILED, describe_error(exc))
             abort_politely(conn, Msg("The other computer could not save the files: {error}",
                                      error=describe_error(exc)), failed=True)

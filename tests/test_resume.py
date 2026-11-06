@@ -308,11 +308,10 @@ class ResumeTests(unittest.TestCase):
         delays = []
         for _ in range(3):
             t.retry_at = 0
-            before = time.monotonic()
             self.sender.resume_waiting({"receiver-id": ("127.0.0.1", self.port)})
             self.finish(t)
             self.assertEqual(t.state, tx.INTERRUPTED, t.message)
-            delays.append(t.retry_at - before)
+            delays.append(t.retry_at - t.finished)  # (Windows takes ~2 s to refuse a connection)
         self.assertEqual([round(d) for d in delays], [10, 30, 60])
 
     def test_cancel_stops_it_for_good(self):
@@ -426,7 +425,7 @@ class ResumeTests(unittest.TestCase):
         self.assertEqual(t.state, tx.DONE, t.message)
         [record] = manager.store.all()
         self.assertTrue(Path(record.folder).is_absolute())
-        self.assertTrue(Path(record.folder).is_relative_to(self.root / "inbox"))
+        self.assertTrue(Path(record.folder).resolve().is_relative_to((self.root / "inbox").resolve()))  # macOS: /private
 
     def test_old_sender_without_sessions(self):
         # An app from before resuming: works as before, and nothing is kept after a break.
