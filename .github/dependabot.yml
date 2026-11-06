@@ -1,5 +1,5 @@
 # Checks weekly for new versions and opens one pull request per group.
-# The Tests and Build apps workflows then check the update on Windows and Linux.
+# The Tests and Build apps workflows then check the update on Windows, Linux and macOS.
 version: 2
 updates:
   # Python packages in requirements.txt and requirements-build.txt

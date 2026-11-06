@@ -1,4 +1,4 @@
-"""Start LAN File Transfer. The same file is the entry point on Windows and Linux."""
+"""Start LAN File Transfer. The same file is the entry point on Windows, Linux and macOS."""
 
 import json
 import logging

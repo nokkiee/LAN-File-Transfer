@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- **macOS version** for Apple Silicon Macs (M1 and later) on macOS 14 or newer. It works with the Windows and Linux versions in every direction. Received names are compared without regard to case, as on Windows, so `Readme.md` and `README.md` from Linux don't overwrite each other. Macs can't install updates over Wi‑Fi yet; download new versions from the Releases page.
+
 ## [1.1.2] - 2026-11-03
 
 ### Fixed

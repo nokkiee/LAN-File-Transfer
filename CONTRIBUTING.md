@@ -14,6 +14,7 @@ Open an issue and include:
 - the log file from the computer where it went wrong:
   - Windows: `%APPDATA%\LAN File Transfer\app.log`
   - Linux: `~/.config/lan-file-transfer/app.log`
+  - macOS: `~/Library/Application Support/LAN File Transfer/app.log`
 
 If the computers can't see each other, first check *Troubleshooting* in the
 [README](README.md). Most of these problems come from firewall settings or the
@@ -74,10 +75,10 @@ How the code is organised:
 - Keep each pull request focused on one thing.
 - Make sure `python -m unittest discover -s tests` passes, and add tests for
   new behaviour in the networking and file-handling code.
-  GitHub runs the tests automatically on Windows and Linux for every pull request.
+  GitHub runs the tests automatically on Windows, Linux and macOS for every pull request.
 - Match the style of the surrounding code: plain Python, standard library where
   possible, short comments that explain *why*.
-- Say which systems you tested on (Windows, Linux, or both).
+- Say which systems you tested on (Windows, Linux, macOS).
 - Don't commit built files (`dist/`, `build/`) or anything secret.
 
 ## Releases

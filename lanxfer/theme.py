@@ -1,7 +1,7 @@
 """Light and dark appearance.
 
 The app always uses Qt's Fusion style with its own palettes, so it looks the
-same on Windows and Linux and the theme switch behaves identically on both.
+same on Windows, Linux and macOS, and the theme switch behaves identically on all three.
 "System" follows the operating system's light/dark setting, live.
 """
 

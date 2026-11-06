@@ -3,15 +3,15 @@
 [![Latest release](https://img.shields.io/github/v/release/nokkiee/LAN-File-Transfer)](https://github.com/nokkiee/LAN-File-Transfer/releases/latest)
 [![License: MIT](https://img.shields.io/github/license/nokkiee/LAN-File-Transfer)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue?logo=python&logoColor=white)](https://github.com/nokkiee/LAN-File-Transfer/actions/workflows/tests.yml)
-[![Platform: Windows | Linux](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey)](https://github.com/nokkiee/LAN-File-Transfer/releases/latest)
+[![Platform: Windows | Linux | macOS](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)](https://github.com/nokkiee/LAN-File-Transfer/releases/latest)
 [![Last commit](https://img.shields.io/github/last-commit/nokkiee/LAN-File-Transfer)](https://github.com/nokkiee/LAN-File-Transfer/commits/main)
 [![Code size](https://img.shields.io/github/languages/code-size/nokkiee/LAN-File-Transfer)](https://github.com/nokkiee/LAN-File-Transfer)
 [![Tests](https://github.com/nokkiee/LAN-File-Transfer/actions/workflows/tests.yml/badge.svg)](https://github.com/nokkiee/LAN-File-Transfer/actions/workflows/tests.yml)
 [![Build apps](https://github.com/nokkiee/LAN-File-Transfer/actions/workflows/build.yml/badge.svg)](https://github.com/nokkiee/LAN-File-Transfer/actions/workflows/build.yml)
 
-Send files and folders between two computers on the same Wi‑Fi. Works
-Windows ↔ Linux, Linux ↔ Linux and Windows ↔ Windows. Nothing goes over the
-internet, and you don't need an account.
+Send files and folders between computers on the same Wi‑Fi. Works between
+any mix of Windows, Linux and macOS. Nothing goes over the internet, and you
+don't need an account.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshot-dark.png">
@@ -26,9 +26,13 @@ Get the latest version from the [Releases page](https://github.com/nokkiee/LAN-F
 |----------|-------------|
 | Windows 10 / 11 | `LAN-File-Transfer-Windows.exe` |
 | Linux (64-bit)  | `LAN-File-Transfer-Linux` |
+| macOS 14 or newer, Apple Silicon (M1 and later) | `LAN-File-Transfer-macOS.zip` |
 
-Both are single files with nothing to install. Put the right one on each
-computer and run it. See [CHANGELOG.md](CHANGELOG.md) for what changed in each version.
+The Windows and Linux versions are single files with nothing to install: put
+the right one on each computer and run it. On a Mac, unzip the file and drag
+**LAN File Transfer** into *Applications*. Intel Macs aren't supported.
+
+See [CHANGELOG.md](CHANGELOG.md) for what changed in each version.
 
 ## Using it
 
@@ -78,6 +82,9 @@ automatically the first time you build and kept at
 `~/.local/share/lan-file-transfer-release/signing-key.pem`. If it's ever lost,
 a new one is made, and you copy the next version to each computer by hand once.
 
+**Macs** can't install updates over Wi‑Fi yet: download each new version from
+the Releases page instead. The app on your other computers reminds you.
+
 Copies older than 1.1.0 can't update themselves, so copy the latest version to them by hand
 once. The app reminds you which computers need that. To skip the question and
 install updates automatically, set `"auto_install_updates": true` in that
@@ -104,6 +111,21 @@ computer's `settings.json`.
   - Ubuntu (ufw): `sudo ufw allow 52525/tcp && sudo ufw allow 52526/udp`
   - Fedora (firewalld): `sudo firewall-cmd --permanent --add-port=52525/tcp --add-port=52526/udp && sudo firewall-cmd --reload`
 
+**macOS**
+- The first time you open it, macOS says it can't check the app for malicious
+  software. That's because the app isn't registered with Apple, which costs a
+  yearly fee. Click **Done**, then open *System Settings → Privacy & Security*,
+  scroll down to the message about *LAN File Transfer* and click
+  **Open Anyway**. This is only needed once. If macOS instead says the app is
+  *damaged*, run this once in *Terminal*:
+  `xattr -dr com.apple.quarantine "/Applications/LAN File Transfer.app"`
+- When macOS asks whether *LAN File Transfer* may **find devices on your local
+  network**, click **Allow**, or the computers can't see each other. If you
+  missed it: *System Settings → Privacy & Security → Local Network* and turn
+  on *LAN File Transfer*.
+- If the macOS firewall is on and asks about incoming connections, click
+  **Allow**.
+
 ## Troubleshooting
 
 - **Computers don't see each other:** check that both are on the same Wi‑Fi
@@ -113,7 +135,8 @@ computer's `settings.json`.
   connect both computers to the main network. You can always fall back to
   *Add computer by IP address…*.
 - **Log file:** `%APPDATA%\LAN File Transfer\app.log` on Windows,
-  `~/.config/lan-file-transfer/app.log` on Linux.
+  `~/.config/lan-file-transfer/app.log` on Linux,
+  `~/Library/Application Support/LAN File Transfer/app.log` on macOS.
 
 ## Security note
 
@@ -155,13 +178,17 @@ Build:
 - Windows .exe on a Windows PC: double-click `build_windows.bat` (needs Python from python.org)
 - Windows .exe from Linux: `./build_windows_on_linux.sh` (uses Wine; see the comment in
   `tools/wine_icu_stub.py` for the one workaround it needs)
+- macOS app on a Mac: `./build_macos.sh` (makes `dist/LAN-File-Transfer-macOS.zip`)
 
 The Linux binary runs on distributions at least as new as the one it was built
 on. On an older distro, build it there with `./build_linux.sh`.
 
-GitHub also builds both apps automatically (*Build apps* on the Actions tab).
-Those are unsigned test builds, made on Ubuntu 22.04 so the Linux one runs on
-older distributions too. Official releases are built and signed with `./build_all.sh`.
+GitHub also builds all three apps automatically (*Build apps* on the Actions
+tab) and checks that each one starts and receives a file. Those are unsigned
+test builds; the Linux one is made on Ubuntu 22.04 so it runs on older
+distributions too. Official Windows and Linux releases are built and signed
+with `./build_all.sh`. The macOS app in a release is GitHub's build of the same
+commit, since it isn't part of Wi‑Fi updates yet.
 
 ## License
 

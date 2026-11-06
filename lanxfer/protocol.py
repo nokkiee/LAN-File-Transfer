@@ -1,4 +1,4 @@
-"""Wire protocol shared by the Windows and Linux versions.
+"""Wire protocol shared by the Windows, Linux and macOS versions.
 
 Discovery (UDP, port DISCOVERY_PORT): small JSON datagrams
     {"app": "lanxfer", "v": 1, "type": "hello"|"here"|"bye", "id", "name", "os", "port"}

@@ -33,6 +33,7 @@ body:
         - Windows 11
         - Windows 10
         - Linux
+        - macOS
         - Not a transfer problem
     validations:
       required: true
@@ -44,6 +45,7 @@ body:
         - Windows 11
         - Windows 10
         - Linux
+        - macOS
         - Not a transfer problem
     validations:
       required: true
@@ -66,6 +68,7 @@ body:
       label: Log file
       description: |
         Paste the relevant part of the log from the computer where it went wrong:
-        Windows `%APPDATA%\LAN File Transfer\app.log`, Linux `~/.config/lan-file-transfer/app.log`.
+        Windows `%APPDATA%\LAN File Transfer\app.log`, Linux `~/.config/lan-file-transfer/app.log`,
+        macOS `~/Library/Application Support/LAN File Transfer/app.log`.
         It contains your computer names and local IP addresses. Edit those out if you prefer.
       render: text
