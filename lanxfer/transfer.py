@@ -702,10 +702,13 @@ class Receiver:
         log.info("A transfer was resumed while its old connection was still open; closing that one")
         transfer.interrupt()
         try:
-            conn.shutdown(socket.SHUT_RDWR)
+            conn.shutdown(socket.SHUT_RDWR)  # wakes a thread waiting to read it (Linux, macOS)
         except OSError:
             pass
-        return finished.wait(15)
+        if finished.wait(2):
+            return True
+        conn.close()  # Windows: shutdown doesn't wake a waiting read, but closing does
+        return finished.wait(13)
 
     # -- giving up on a session -------------------------------------------
 

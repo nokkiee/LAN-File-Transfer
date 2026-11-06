@@ -7,6 +7,7 @@ of bytes, like Wi-Fi going away in the middle of a file.
 
 import json
 import os
+import select
 import socket
 import struct
 import sys
@@ -59,6 +60,7 @@ class Relay:
     keep_receiver_side=True drops only the sender's socket, so the receiver still
     thinks it's connected (what happens when a laptop sleeps or Wi-Fi drops out).
     ``rate`` slows it down (bytes per second) so tests can act in the middle of a file.
+    Each connection is relayed by one thread, which alone uses and closes its sockets.
     """
 
     def __init__(self, target_port: int, cut_after: int | None = None, keep_receiver_side: bool = False,
@@ -68,13 +70,14 @@ class Relay:
         self.keep_receiver_side = keep_receiver_side
         self.rate = rate
         self.forwarded = 0  # bytes from the sender to the receiver
-        self.cut = threading.Event()
         self.held: list[socket.socket] = []
+        self.closed = False
         self.server = socket.create_server(("127.0.0.1", 0))
         self.port = self.server.getsockname()[1]
         threading.Thread(target=self._accept, daemon=True).start()
 
     def close(self) -> None:
+        self.closed = True
         self.server.close()
         for sock in self.held:
             sock.close()
@@ -85,38 +88,47 @@ class Relay:
                 client, _ = self.server.accept()
             except OSError:
                 return
-            upstream = socket.create_connection(("127.0.0.1", self.target_port))
-            threading.Thread(target=self._pump, args=(client, upstream, True), daemon=True).start()
-            threading.Thread(target=self._pump, args=(upstream, client, False), daemon=True).start()
+            threading.Thread(target=self._relay, args=(client,), daemon=True).start()
 
-    def _pump(self, src: socket.socket, dst: socket.socket, forward: bool) -> None:
+    def _relay(self, client: socket.socket) -> None:
+        upstream = socket.create_connection(("127.0.0.1", self.target_port))
+        open_ends = [client, upstream]
+        keep = False
         try:
-            while True:
-                limit = 64 * 1024
-                if forward and self.cut_after is not None:
-                    limit = min(limit, self.cut_after - self.forwarded)
-                    if limit <= 0:
-                        self._cut(src, dst)
-                        return
-                data = src.recv(limit)
-                if not data:
-                    dst.shutdown(socket.SHUT_WR)
-                    return
-                dst.sendall(data)
-                if forward:
-                    self.forwarded += len(data)
-                    if self.rate:
-                        time.sleep(len(data) / self.rate)
+            while open_ends and not self.closed:
+                readable, _, _ = select.select(open_ends, [], [], 0.2)
+                for src in readable:
+                    dst, forward = (upstream, True) if src is client else (client, False)
+                    limit = 64 * 1024
+                    if forward and self.cut_after is not None:
+                        limit = min(limit, self.cut_after - self.forwarded)
+                        if limit <= 0:  # break the connection, like the network going away
+                            reset(client)
+                            if self.keep_receiver_side:
+                                keep = True
+                                self.held.append(upstream)  # never closed: the receiver hears nothing
+                            else:
+                                reset(upstream)
+                            return
+                    data = src.recv(limit)
+                    if not data:
+                        open_ends.remove(src)
+                        try:
+                            dst.shutdown(socket.SHUT_WR)
+                        except OSError:
+                            pass
+                        continue
+                    dst.sendall(data)
+                    if forward:
+                        self.forwarded += len(data)
+                        if self.rate:
+                            time.sleep(len(data) / self.rate)
         except OSError:
             pass
-
-    def _cut(self, client: socket.socket, upstream: socket.socket) -> None:
-        reset(client)
-        if self.keep_receiver_side:
-            self.held.append(upstream)  # never closed: the receiver hears nothing
-        else:
-            reset(upstream)
-        self.cut.set()
+        finally:
+            client.close()
+            if not keep:
+                upstream.close()
 
 
 class ResumeTests(unittest.TestCase):
