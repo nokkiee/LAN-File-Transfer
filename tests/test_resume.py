@@ -5,6 +5,7 @@ small relay that drops both sockets (or only the sender's) after a set number
 of bytes, like Wi-Fi going away in the middle of a file.
 """
 
+import faulthandler
 import json
 import os
 import select
@@ -70,6 +71,7 @@ class Relay:
         self.keep_receiver_side = keep_receiver_side
         self.rate = rate
         self.forwarded = 0  # bytes from the sender to the receiver
+        self.events: list[str] = []  # what happened, for failure messages
         self.held: list[socket.socket] = []
         self.closed = False
         self.server = socket.create_server(("127.0.0.1", 0))
@@ -103,6 +105,7 @@ class Relay:
                     if forward and self.cut_after is not None:
                         limit = min(limit, self.cut_after - self.forwarded)
                         if limit <= 0:  # break the connection, like the network going away
+                            self.events.append(f"cut after {self.forwarded}")
                             reset(client)
                             if self.keep_receiver_side:
                                 keep = True
@@ -112,6 +115,7 @@ class Relay:
                             return
                     data = src.recv(limit)
                     if not data:
+                        self.events.append("sender closed" if forward else "receiver closed")
                         open_ends.remove(src)
                         try:
                             dst.shutdown(socket.SHUT_WR)
@@ -123,8 +127,8 @@ class Relay:
                         self.forwarded += len(data)
                         if self.rate:
                             time.sleep(len(data) / self.rate)
-        except OSError:
-            pass
+        except OSError as exc:
+            self.events.append(f"relay error {exc!r}")
         finally:
             client.close()
             if not keep:
@@ -202,7 +206,9 @@ class ResumeTests(unittest.TestCase):
         self.assertEqual(t.state, tx.INTERRUPTED, t.message)
         r = self.receiver.snapshot()[0]
         if not relay_args.get("keep_receiver_side"):
-            self.assertTrue(wait_until(lambda: r.is_finished))
+            if not wait_until(lambda: r.is_finished):
+                faulthandler.dump_traceback(all_threads=True)  # where is the receiver stuck?
+                self.fail(f"the receiver didn't notice the break: {r} / relay: {relay.events}")
             self.assertEqual(r.state, tx.INTERRUPTED, r.message)
         return t, r, folder
 
