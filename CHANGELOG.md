@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- **Paste with Ctrl+V** (⌘V on a Mac) to add what you copied to the files to send: files copied in Explorer, Finder or a Linux file manager, an image such as a screenshot (sent as `Pasted image <date and time>.png`), or text (sent as a .txt file). Right-click the file list for *Paste* too. A pasted image or text is kept in the app's settings folder only as long as a send may still need it.
+
 ## [1.4.0] - 2026-11-06
 
 ### Added

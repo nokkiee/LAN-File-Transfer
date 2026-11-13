@@ -8,15 +8,15 @@ import time
 from pathlib import Path
 
 from PySide6.QtCore import QFileInfo, QSize, Qt, QTimer, QUrl, Signal
-from PySide6.QtGui import QDesktopServices, QPainter, QPalette
+from PySide6.QtGui import QAction, QDesktopServices, QKeySequence, QPainter, QPalette
 from PySide6.QtWidgets import (
     QAbstractItemView, QApplication, QCheckBox, QComboBox, QDialog, QDialogButtonBox, QFileDialog, QFileIconProvider,
     QFormLayout, QFrame, QGroupBox, QHBoxLayout, QInputDialog, QLabel, QLineEdit, QListWidget,
     QListWidgetItem, QMainWindow, QMenu, QMessageBox, QProgressBar, QPushButton, QScrollArea, QSplitter,
-    QStyle, QToolButton, QVBoxLayout, QWidget,
+    QStyle, QToolButton, QToolTip, QVBoxLayout, QWidget,
 )
 
-from . import APP_NAME, VERSION, os_label, updates
+from . import APP_NAME, VERSION, os_label, paste, updates
 from .discovery import Discovery, Peer, parse_address
 from .i18n import AUTO, LANGUAGES, decimal, tr, tr_msg
 from .icon import app_icon
@@ -462,6 +462,9 @@ class MainWindow(QMainWindow):
         self.themes = themes
         self.manager = TransferManager(self.identity, lambda: self.settings.download_dir, self._present_offer,
                                        store_dir=config_dir() / "transfers")
+        self._pasted_dir = config_dir() / "pasted"
+        paste.prune(self._pasted_dir, {e["source"] for r in self.manager.store.all() if r.kind == "send"
+                                       for e in r.entries})
         self.updates = UpdateService(self.manager, self.updateOfferArrived.emit, self.updateInstalled.emit,
                                      auto_install=lambda: self.settings.auto_install_updates)
         self.discovery = Discovery(self.identity)
@@ -569,9 +572,17 @@ class MainWindow(QMainWindow):
         dev_layout.addWidget(add_ip)
 
         # 2. files
-        self.file_list = DropListWidget(tr("Drag files or folders here\n\nor use the buttons below"))
+        paste_key = QKeySequence(QKeySequence.StandardKey.Paste).toString(QKeySequence.SequenceFormat.NativeText)
+        self.file_list = DropListWidget(tr("Drag files or folders here,\npaste copied files or images with {key}\n\n"
+                                           "or use the buttons below", key=paste_key))
         self.file_list.setIconSize(QSize(24, 24))
         self.file_list.pathsDropped.connect(self._add_paths)
+        self.paste_action = QAction(tr("Paste"), self)
+        self.paste_action.setShortcuts(QKeySequence.StandardKey.Paste)
+        self.paste_action.triggered.connect(self._paste)
+        self.addAction(self.paste_action)  # works wherever the focus is in the window
+        self.file_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.file_list.customContextMenuRequested.connect(self._file_menu)
         self.file_list.model().rowsInserted.connect(self._update_send_button)
         self.file_list.model().rowsRemoved.connect(self._update_send_button)
         add_files = QPushButton(tr("Add files…"))
@@ -581,7 +592,7 @@ class MainWindow(QMainWindow):
         remove = QPushButton(tr("Remove"))
         remove.clicked.connect(self._remove_selected_files)
         clear = QPushButton(tr("Clear"))
-        clear.clicked.connect(self.file_list.clear)
+        clear.clicked.connect(self._clear_files)
         file_buttons = QHBoxLayout()
         for b in (add_files, add_folder):
             file_buttons.addWidget(b)
@@ -868,9 +879,36 @@ class MainWindow(QMainWindow):
         if path:
             self._add_paths([path])
 
+    def _paste(self) -> None:
+        try:
+            paths = paste.paths_from_clipboard(QApplication.clipboard().mimeData(), self._pasted_dir)
+        except OSError as exc:
+            QMessageBox.warning(self, APP_NAME, tr("Could not save what you pasted:\n{error}", error=exc))
+            return
+        if not paths:
+            QToolTip.showText(self.file_list.mapToGlobal(self.file_list.rect().center()),
+                              tr("There is nothing to paste. Copy some files or an image first."), self.file_list)
+            return
+        self._add_paths(paths)
+
+    def _file_menu(self, pos) -> None:
+        menu = QMenu(self)
+        menu.addAction(self.paste_action)
+        remove = menu.addAction(tr("Remove"), self._remove_selected_files)
+        remove.setEnabled(bool(self.file_list.selectedItems()))
+        menu.exec(self.file_list.viewport().mapToGlobal(pos))
+
     def _remove_selected_files(self) -> None:
+        removed = []
         for item in self.file_list.selectedItems():
+            removed.append(item.data(Qt.ItemDataRole.UserRole))
             self.file_list.takeItem(self.file_list.row(item))
+        paste.forget(removed, self._pasted_dir)
+
+    def _clear_files(self) -> None:
+        removed = self._paths()
+        self.file_list.clear()
+        paste.forget(removed, self._pasted_dir)
 
     def dragEnterEvent(self, event):
         if event.mimeData().hasUrls():

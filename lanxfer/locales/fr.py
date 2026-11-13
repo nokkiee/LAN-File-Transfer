@@ -14,8 +14,14 @@ MESSAGES = {
     "Choose the computer to send to": "Choisissez l’ordinateur destinataire",
     "Add computer by IP address…": "Ajouter un ordinateur par adresse IP…",
     "Choose files and folders": "Choisissez les fichiers et dossiers",
-    "Drag files or folders here\n\nor use the buttons below":
-        "Faites glisser des fichiers ou des dossiers ici\n\nou utilisez les boutons ci-dessous",
+    "Drag files or folders here,\npaste copied files or images with {key}\n\nor use the buttons below":
+        "Faites glisser des fichiers ou des dossiers ici,\ncollez des fichiers ou des images copiés avec {key}\n\nou utilisez les boutons ci-dessous",
+    "Paste": "Coller",
+    "Pasted image": "Image collée",
+    "Pasted text": "Texte collé",
+    "Could not save what you pasted:\n{error}": "Impossible d’enregistrer ce que vous avez collé :\n{error}",
+    "There is nothing to paste. Copy some files or an image first.":
+        "Il n’y a rien à coller. Copiez d’abord des fichiers ou une image.",
     "Add files…": "Ajouter des fichiers…",
     "Add folder…": "Ajouter un dossier…",
     "Remove": "Retirer",

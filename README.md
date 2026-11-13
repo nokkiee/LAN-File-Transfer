@@ -39,7 +39,9 @@ See [CHANGELOG.md](CHANGELOG.md) for what changed in each version.
 1. Open the app on **both** computers. After a few seconds each one shows the
    other under **“1. Choose the computer to send to”**.
 2. Drag files or folders into **“2. Choose files and folders”**, or use
-   *Add files…* / *Add folder…*.
+   *Add files…* / *Add folder…*. You can also copy files, or an image such as
+   a screenshot, and press **Ctrl+V** (**⌘V** on a Mac) in the window. A pasted
+   image is sent as a PNG file, and pasted text as a .txt file.
 3. Click **Send**. The other computer asks whether to accept. Once accepted,
    the files are saved to `Downloads/LAN File Transfer`. You can change that
    folder at the bottom of the window or in *Settings*.
