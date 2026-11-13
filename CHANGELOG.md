@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-11-13
+
 ### Added
 
 - **Paste with Ctrl+V** (⌘V on a Mac) to add what you copied to the files to send: files copied in Explorer, Finder or a Linux file manager, an image such as a screenshot (sent as `Pasted image <date and time>.png`), or text (sent as a .txt file). Right-click the file list for *Paste* too. A pasted image or text is kept in the app's settings folder only as long as a send may still need it.
@@ -100,7 +102,8 @@ First version. Not published on GitHub.
 - Settings: computer name, receive folder, and whether to ask before accepting.
 - Single-file apps for Windows (`.exe`) and Linux. On Linux the app adds itself to the applications menu.
 
-[Unreleased]: https://github.com/nokkiee/LAN-File-Transfer/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/nokkiee/LAN-File-Transfer/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/nokkiee/LAN-File-Transfer/releases/tag/v1.5.0
 [1.4.0]: https://github.com/nokkiee/LAN-File-Transfer/releases/tag/v1.4.0
 [1.3.0]: https://github.com/nokkiee/LAN-File-Transfer/releases/tag/v1.3.0
 [1.2.0]: https://github.com/nokkiee/LAN-File-Transfer/releases/tag/v1.2.0
