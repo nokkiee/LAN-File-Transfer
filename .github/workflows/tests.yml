@@ -25,9 +25,12 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
-      # The tests cover the networking and file handling, which don't need Qt.
+      # Most tests cover the networking and file handling; the paste tests also need Qt (run off-screen).
+      - name: Install Qt's system libraries
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3
       - name: Install test dependencies
-        run: python -m pip install "cryptography>=42"
+        run: python -m pip install -r requirements.txt
       # Catches syntax that doesn't work on this Python version, including the GUI code the tests don't import.
       - name: Check all files compile
         run: python -m compileall -q lanxfer main.py tools tests
